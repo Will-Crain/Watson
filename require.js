@@ -1,0 +1,16 @@
+'use strict'
+
+require('PathFinder')
+require('Room')
+require('globals')
+global.Grid = require('grid')
+require('misc')
+require('prototype.Body')
+require('prototype.Creep')
+require('prototype.Number')
+require('prototype.Object')
+require('prototype.Room')
+require('prototype.RoomObject')
+require('prototype.RoomPosition')
+require('roomPlan')
+require('roomVisual')
