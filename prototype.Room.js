@@ -171,6 +171,12 @@ Room.prototype.runRCL3 = function(scope) {
     if (this.memory.eventFlags[3]['02EXTENSIONS'] == false) {
         if (this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_EXTENSION}).length == CONTROLLER_STRUCTURES['extension'][this.controller.level]) {
             
+            for (let i in this.memory.mineRooms) {
+                if (i !== this.name) {
+                    this.addCreep('RESERVER', [['Reserve', {roomName: i}]])
+                }
+            }
+
             this.memory.eventFlags[3]['02EXTENSIONS'] = true
         }
     }
@@ -204,6 +210,21 @@ Room.prototype.runRCL4 = function(scope) {
             let posStr = RoomPosition.serialize(this.storage.pos)
             this.memory.takeFrom.unshift(posStr)
             this.memory.storeTo.push(posStr)
+
+            this.addCreep('CONTROLLER_FILLER', [['DeliverController', {}]], )
+            let storagePos = RoomPosition.serialize(this.storage.pos)
+            for (let i in this.memory.sources) {
+                let newPath = PathFinder.search(this.storage.pos, RoomPosition.parse(this.memory.sources[i].container), {ignoreRoads: true, maxRooms: 4, ignoreCreeps: true, range: 0})
+
+                let serPath = PathFinder.serialize(newPath.path)
+
+                this.memory.sources[i].path = serPath
+                this.memory.sources[i].pathLength = newPath.path.length
+                
+                this.addRoadFromPath(serPath)
+            }
+            this.updateHaulers(true)
+
             this.memory.eventFlags[4]['01STORAGE'] = true
         }
     }
@@ -295,6 +316,10 @@ Room.prototype.runRCL8 = function(scope) {
 
 //      //      //      //      //      //      //      //      //      //      //      //  
 
+Room.prototype.claimRoom = function(roomName) {
+    // Automate bunker placement
+}
+
 Room.prototype.addFromBlueprint = function(posStr, blueprint, level) {
     let posObj = RoomPosition.parse(posStr)
     
@@ -376,20 +401,6 @@ Room.prototype.getStore = function(resourceType = RESOURCE_ENERGY) {
     }
     
     return false
-}
-
-Room.prototype.addRoadFromPath = function(pathStr, placeOnLast = false) {
-    let path = PathFinder.parse(pathStr)
-    for (let i in path) {
-        let posObj = RoomPosition.parse(path[i])
-        if (posObj.isOnEdge()) {
-            continue
-        }
-        if (placeOnLast && i == path.length-1) {
-            break
-        }
-        this.addStructure(path[i], STRUCTURE_ROAD, PRIORITY_BY_STRUCTURE[STRUCTURE_ROAD] + 1*(path.length-i))
-    }
 }
 
 Room.prototype.setup = function() {
@@ -517,6 +528,8 @@ Room.prototype.checkToBuild = function() {
     let sumRepair = 0
     let targetRooms = []
 
+    this.memory.constructionSites = 0
+
     for (let i in this.memory.structures) {
         // If there is no id, or there is no object by id
         if (this.memory.structures[i].id == '' || _.isUndefined(this.memory.structures[i].id) || _.isUndefined(Game.getObjectById(this.memory.structures[i].id))) {
@@ -581,10 +594,22 @@ Room.prototype.buildQueue = function() {
         return 'BUSY'
     }
     else {
+
+        for (let i in this.memory.buildQueue) {
+            let index = this.memory.buildQueue[i]
+            if (_.isUndefined(this.memory.structures[index])) {
+                _.remove(this.memory.buildQueue, index)
+                this.memory.structures[index] = undefined
+                continue
+            }
+        }
+
         this.memory.buildQueue = _.sortBy(this.memory.buildQueue, s => PRIORITY_BY_STRUCTURE[this.memory.structures[s].structureType]).reverse()
         for (let i = 0; i < Math.min((maxBuildSites - this.memory.constructionSites), this.memory.buildQueue.length); i++) {
             
+
             let index = this.memory.buildQueue[i]
+
             let obj = this.memory.structures[index]
             let posObj = RoomPosition.parse(obj.posStr)
             
@@ -599,7 +624,6 @@ Room.prototype.buildQueue = function() {
             }
         }
     }
-    
 }
 
 Room.prototype.addStructure = function(posStr, structureType, priority=PRIORITY_BY_STRUCTURE[structureType]) {
@@ -635,7 +659,7 @@ Room.prototype.saturateSource = function(posStr) {
     this.addCreep('HAULER', [['Haul', {pickUp: thisSource.container, dist: thisSource.pathLength, dropOff: _.first(this.memory.storeTo)}]], haulerPriority, false, this.getHaulerBody(thisSource.pathLength))
 }
 
-Room.prototype.addSource = function(posStr, saturate = false) {
+Room.prototype.addSource = function(posStr, saturate = true) {
     let posObj = RoomPosition.parse(posStr)
     let obj = _.first(posObj.lookFor(LOOK_SOURCES))
     
@@ -678,22 +702,20 @@ Room.prototype.defend = function() {
         this.addCreep('DEFENSE_MELEE', [['DefenseMelee', {}]])
     }
 
-    for (let i in this.memory.remoteMines) {
-        if (this.memory.remoteMines[i] > 3000) {
-            let targetRoom = Game.rooms[this.memory.remoteMines[i]]
-            if (_.isUndefiend(targetRoom)) {
+    for (let i in this.memory.mineRooms) {
+        if (i == this.name) {
+            continue
+        }
+        if (this.memory.mineRooms[i] > 30000) {
+            let targetRoom = Game.rooms[i]
+            if (_.isUndefined(targetRoom)) {
                 return
             }
             else {
-                let hostileCreeps = Game.rooms[this.memory.remoteMines[i]]
-                if (hostileCreeps.length > 0 && _.any(hostileCreeps, s => s.owner == 'INVADER')) {
-                    if (_.any(this.memory.Creeps, s => s.role == 'DEFENSE_MELEE' && _.last(s.baseStack)[1].roomName !== i)) {
-
-                    }
-                    else {
-                        this.memory.remoteMines[i] = 0
-                        this.addCreep('DEFENSE_MELEE', [['DefenseMelee', {roomName: i}]])
-                    }
+                let hostileCreeps = targetRoom.find(FIND_HOSTILE_CREEPS)
+                if (hostileCreeps.length > 0 && _.any(hostileCreeps, s => s.owner.username == 'Invader')) {
+                    this.memory.mineRooms[i] = 0
+                    this.addCreep('DEFENSE_MELEE', [['DefenseMelee', {roomName: i}]])
                 }
             }
         }
@@ -718,7 +740,7 @@ Room.prototype.defend = function() {
 }
 
 Room.prototype.fireTowers = function() {
-    let hostileCreeps = this.find(FIND_HOSTILE_CREEPS)
+    let hostileCreeps = this.find(FIND_HOSTILE_CREEPS, {filter: s => !s.pos.isOnEdge() || !s.pos.isNearExit()})
     if (hostileCreeps.length == 0) {
         return
     }
@@ -740,7 +762,12 @@ Room.prototype.fireTowers = function() {
 
 Room.prototype.getBestBody = function(body, cap=this.energyCapacityAvailable) {
     // be wary of starving room of energy
-    
+
+    let filler = _.any(this.memory.Creeps, s => s.role == 'EXTENSIONER' && _.isUndefined(Game.creeps[s]))
+    if (filler == false) {
+        cap = Math.min(this.energyAvailable, 300)
+    }
+
     let calcCost = 0
     let calcBod = []
     for (let bPart in body) {
@@ -749,7 +776,7 @@ Room.prototype.getBestBody = function(body, cap=this.energyCapacityAvailable) {
             calcBod.push(body[bPart])
         }
     }
-    cap = 300
+
 
     if (_.last(calcBod) == MOVE && body.length !== 1) {
         calcBod.pop()
@@ -758,29 +785,45 @@ Room.prototype.getBestBody = function(body, cap=this.energyCapacityAvailable) {
     return _.sortBy(calcBod, (v, k) => _.indexOf(BODY_ORDER, v))
 }
 
-Room.prototype.getHaulerBody = function(dist, energyCapacity = 3000) {
+Room.prototype.getHaulerBody = function(dist, energyCapacity = 3000, roads = false) {
 
     let carryParts = Math.ceil((dist*2)*(energyCapacity/ENERGY_REGEN_TIME)/(CARRY_CAPACITY))
-    let moveParts = Math.ceil(carryParts)
 
     if (dist > CREEP_LIFE_TIME/2) {
         // too far
         return false
     }
 
-    if (carryParts + moveParts > 50) {
+    if (carryParts*1.5 > 50) {
         // Split into two haulers?
         return false
     }
     
     let body = []
     
-    for (let v = 0; v < moveParts; v++) {
-        body.push(MOVE)
-        body.push(CARRY)
+    if (roads == false) {
+        for (let v = 0; v < carryParts; v++) {
+            body.push(MOVE)
+            body.push(CARRY)
+        }
     }
-    
-    return this.getBestBody(body)
+    else {
+        for (let v = 0; v < Math.ceil(carryParts/2); v++) {
+            body.push(MOVE)
+            body.push(CARRY)
+            body.push(CARRY)
+        }
+    }
+    return body
+}
+
+Room.prototype.updateHaulers = function(roads = false) {
+    let haulerCreeps = _.filter(this.memory.Creeps, s => s.role == 'HAULER')
+    for (let i in haulerCreeps) {
+        let sourceMem = _.find(this.memory.sources, s => s.container == _.last(haulerCreeps[i].baseStack)[1].pickUp)
+        haulerCreeps[i].body = this.getHaulerBody(sourceMem.pathLength, 3000, roads)
+        _.last(haulerCreeps[i].baseStack)[1].dist = sourceMem.pathLength
+    }
 }
 
 //      //      //      //      //      //      //      //      //      //      //      //
@@ -813,6 +856,21 @@ Room.prototype.getStructures = function(newPos, toStore, range = 4) {
     }
 
     return structs
+}
+
+Room.prototype.addRoadFromPath = function(pathStr, placeOnLast = false) {
+    let path = PathFinder.parse(pathStr)
+    console.log(path)
+    for (let i in path) {
+        let posObj = RoomPosition.parse(path[i])
+        if (posObj.isOnEdge()) {
+            continue
+        }
+        if (placeOnLast && i == path.length-1) {
+            break
+        }
+        this.addStructure(path[i], STRUCTURE_ROAD, PRIORITY_BY_STRUCTURE[STRUCTURE_ROAD] + 1*(path.length-i))
+    }
 }
 
 //      //      //      //      //      //      //      //      //      //      //      //
@@ -925,4 +983,3 @@ Room.prototype.runWait = function(scope) {
         this.popState()
     }
 }
-

@@ -36,7 +36,13 @@ RoomVisual.showRoom = function(obj) {
         res = RoomVisual.drawLineText(obj.name, currX, currY, 'Build: Empty', 1)
     }
     else {
-        res = RoomVisual.drawLineText(obj.name, currX, currY, `Build: ${obj.memory.buildQueue}`, 1)
+        let outstr = ''
+        let countedBy = _.countBy(obj.memory.buildQueue, s => obj.memory.structures[s].structureType)
+        
+        for (let i in countedBy) {
+            outstr += `${i}: ${countedBy[i]}`
+        }
+        res = RoomVisual.drawLineText(obj.name, currX, currY, `Build: ${outstr}`, 1)
     }
     currX = res[0]
     currY = res[1]
@@ -65,6 +71,9 @@ RoomVisual.showRoom = function(obj) {
 
 RoomVisual.drawGrid = function(grid, roomName) {
     let RV = new RoomVisual(roomName)
+
+    let valueMax = _.max(_.values(grid))
+    let valueMin = 0
     
     for (let i in grid) {
         let x = Number(i.substr(0, 2))
@@ -72,9 +81,6 @@ RoomVisual.drawGrid = function(grid, roomName) {
 
         let colorMax = 0.7
         let colorMin = 0
-
-        let valueMax = _.max(_.values(grid))
-        let valueMin = 0
 
         let h = (grid[i]/valueMax) * ( (colorMax - colorMin) + colorMin)
         let s = 1

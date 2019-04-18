@@ -13,6 +13,10 @@ RoomObject.prototype.invokeState = function() {
         return false
     }
     
+    // if (this.name && this.name == 'W47N49-9') {
+    //     console.log(`${Game.time}\t${method}`)
+    // }
+    
     this[method](scope)
     return true
 }
@@ -40,9 +44,17 @@ RoomObject.prototype.setState = function(state, scope={}) {
     return state
 }
 
-RoomObject.prototype.pushState = function(state, scope={}, unique = false, runNext = true) {
+RoomObject.prototype.pushState = function(state, scope={}) {
     if (!this.memory.stack) {
         this.memory.stack = []
+    }
+    if (!_.isUndefined(this.memory) && !this.memory.recursionCount) {
+        this.memory.recursionCount = 0
+    }
+
+    let runNext = false
+    if (this.memory.recursionCount < RECURSION_DEPTH) {
+        runNext = true
     }
     
     let method = `run${state}`
@@ -54,17 +66,10 @@ RoomObject.prototype.pushState = function(state, scope={}, unique = false, runNe
         throw new Error(`Failure to add ${method} to ${this}, Stack too large`)
     }
     
-    for (let i in this.memory.stack) {
-        if (state == this.memory.stack[i][0]) {
-            if (this.memory.stack[i][1].unique) {
-                return false
-            }
-        }
-    }
-    
     this.memory.stack.unshift([state, scope])
     
     if (runNext) {
+        this.memory.recursionCount++
         this.invokeState()
     }
     return state
@@ -83,17 +88,26 @@ RoomObject.prototype.skipState = function() {
     this.pushState('Wait', {until: Game.time+1})
 }
 
-RoomObject.prototype.popState = function(runNext = false) {
+RoomObject.prototype.popState = function() {
     if (!this.memory.stack || !this.memory.stack.length) {
         return false
+    }
+    if (!_.isUndefined(this.memory) && !this.memory.recursionCount) {
+        this.memory.recursionCount = 0
+    }
+
+    let runNext = false
+    if (this.memory.recursionCount < RECURSION_DEPTH) {
+        runNext = true
     }
     
     let [state] = this.memory.stack.shift()
     if (!this.memory.stack.length) {
-        this.memory.stack = undefined
+        this.memory.stack = [[]]
     }
     
     if (runNext) {
+        this.memory.recursionCount++
         this.invokeState()
     }
 }
@@ -109,3 +123,7 @@ RoomObject.prototype.runWait = function(scope) {
         this.popState()
     }
 }
+
+//      //      //      //      //      //      //      //      //
+
+//      //      //      //      //      //      //      //      //

@@ -34,10 +34,11 @@ PathFinder.parse = function(pathStr) {
 	for (let i in rooms) {
         for (let v = 0; v < paths[i].length/4; v++) {
             let substr = paths[i].substr(v*4, v*4+4)
-            let posStr = `${substr.substr(0, 2)}${substr.substr(2, 3)}${rooms[i]}`
+            let posStr = `${substr.substr(0, 2)}${substr.substr(2, 2)}${rooms[i]}`
             path.push(posStr)
         }
 	}
 
     return path
 }
+

@@ -10,8 +10,8 @@ Room.placeBunker = function(roomName, size = 7) {
 
     let grid = new Grid(50, 50)
     let toAvoid = {
-        2: [..._.map(tRoom.find(FIND_SOURCES), s => s.pos), ..._.map(tRoom.find(FIND_MINERALS), s => s.pos)],
-        3: [tRoom.controller.pos]
+        1: [..._.map(tRoom.find(FIND_SOURCES), s => s.pos), ..._.map(tRoom.find(FIND_MINERALS), s => s.pos)],
+        0: [tRoom.controller.pos]
     }
 
     for (let v = 0; v <= 49; v++) {
@@ -42,7 +42,7 @@ Room.placeBunker = function(roomName, size = 7) {
             }
 
             let adj = [grid.get(i-1, v), grid.get(i, v-1), grid.get(i-1, v-1)]
-            grid.set(i, v, Math.min(...adj)+1)
+            grid.set(i, v, Math.min(...adj)+1) 
 
         }
     }

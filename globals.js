@@ -1,5 +1,7 @@
 'use strict'
 
+global.OVERMIND_ROOMS_CLEANSED = 5
+
 global.DIRECTIONS = {
     1: [0, -1],
     2: [1, -1],
@@ -13,6 +15,7 @@ global.DIRECTIONS = {
 
 global.BODY_ORDER = ['tough', 'move', 'carry', 'work', 'ranged_attack', 'attack', 'claim', 'heal']
 
+global.RECURSION_DEPTH = 5
 global.CREEP_COUNT = 1e6
 
 global.ME =                 'engineeryo'
@@ -22,17 +25,18 @@ global.HOSTILE_PLAYERS =    ['k-c']
 
 global.PRIORITY_BY_ROLE = {
 	ENERGY_GATHERER: 	2,
-	SCOUT:						5,
+	SCOUT:				5,
 	ANKLE_DISMANTLER:	4,
-	ANKLE_BITER:			4,
+	ANKLE_BITER:		4,
 	DEFENSE_RANGED:		4,
 	DEFENSE_MELEE:		3,
 	MOBILE_UPGRADER:	3,
-	EXTENSIONER:			0.5,
-	REPAIRER:					3,
-	BUILDER:					3,
-	CLAIMER:					2,
-	RESERVER:					2
+	EXTENSIONER:		0.5,
+	REPAIRER:			4,
+	BUILDER:			4,
+	RESERVER:			4,
+	CLAIMER:			4,
+	CONTROLLER_FILLER:	4
 }
 
 global.PRIORITY_BY_STRUCTURE = {
@@ -49,13 +53,37 @@ global.PRIORITY_BY_STRUCTURE = {
     'extractor':    80,
     'lab':          60,
     'terminal':     96,
-    'container':    20,
+    'container':    21,
     'nuker':        25
+}
+
+global.REPAIR_THRESHOLD_BY_STRUCTURE = {
+    'spawn':        0.99,
+    'extension':    0.95,
+    'road':         0.75,
+    'wall':         0.1,
+    'rampart':      0.1,
+    'link':         0.96,
+    'storage':      0.98,
+    'tower':        0.98,
+    'observer':     0.95,
+    'power_spawn':  0.99,
+    'extractor':    0.95,
+    'lab':          0.95,
+    'terminal':     0.98,
+    'container':    0.8,
+    'nuker':        0.95
+
 }
 
 global.MAX_STACK_LENGTH = 100
 
 global.BODIES = {
+
+	// Reserves and claims rooms
+	RESERVER:			[MOVE, CLAIM, MOVE, CLAIM],
+	CLAIMER:			[MOVE, MOVE, MOVE, MOVE, MOVE, CLAIM],
+
     // Mobile energy miner
 	ENERGY_GATHERER:    [MOVE, CARRY, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, CARRY, MOVE, CARRY],
 	
@@ -67,18 +95,19 @@ global.BODIES = {
 
 	// Defenders
 	DEFENSE_RANGED:		[MOVE, RANGED_ATTACK, MOVE, RANGED_ATTACK, MOVE, RANGED_ATTACK, MOVE, RANGED_ATTACK, MOVE, RANGED_ATTACK],
-	DEFENSE_MELEE:		[MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK],
+	DEFENSE_MELEE:		[MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK],
     
     // Early RCL mobile upgrader
-		MOBILE_UPGRADER:    [MOVE, CARRY, MOVE, WORK, MOVE, CARRY, WORK, MOVE, CARRY, MOVE, WORK, MOVE, WORK, MOVE, WORK],
-		STATIC_UPGRADER:		[MOVE, CARRY, WORK, WORK, MOVE, CARRY, WORK, WORK, MOVE, CARRY, WORK, WORK, MOVE, CARRY, WORK, WORK, MOVE, CARRY, WORK, WORK],
+    MOBILE_UPGRADER:    [MOVE, CARRY, MOVE, WORK, MOVE, CARRY, WORK, MOVE, CARRY, MOVE, WORK, MOVE, WORK, MOVE, WORK],
+    STATIC_UPGRADER:    [MOVE, CARRY, WORK, WORK, MOVE, CARRY, WORK, WORK, MOVE, CARRY, WORK, WORK],
     
     // Static energy miner
     ENERGY_MINER:       [MOVE, WORK, CARRY, MOVE, WORK, WORK, MOVE, WORK, WORK],
     
     // Hauler of any kind
     HAULER:             [MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY],
-    
+	CONTROLLER_FILLER:	[MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY],
+	
     // Energy manager around extensions
 	EXTENSIONER:        [MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY],
 
