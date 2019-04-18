@@ -252,6 +252,11 @@ Creep.prototype.runBuild = function(scope) {
         }
     }
     else {
+
+        if (!posObj) {
+            this.popState()
+        }
+
         if (!this.pos.inRangeTo(posObj, 3)) {
             this.pushState('MoveTo', {posStr: posStr, range: 3})
         }
