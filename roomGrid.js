@@ -1,9 +1,10 @@
 class RoomGrid {
-	constructor(width=50, height=50) {
-		this.width = width
-		this.height = height
-        this.data = []
-        this.structures = []
+	constructor(data = {}, structures = {}) {
+		this.width = 50
+		this.height = 50
+
+		this.data = data
+		this.structures = structures
 	}
 
 	set(x, y, val) {
@@ -33,8 +34,12 @@ class RoomGrid {
 		return this.data[pIndex]
 	}
 
-	toString() {
+	outData() {
 		return JSON.stringify(this.data)
+	}
+
+	outStructures() {
+		return JSON.stringify(this.structures)
 	}
 }
 

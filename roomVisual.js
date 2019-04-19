@@ -99,7 +99,8 @@ RoomVisual.drawGrid = function(grid, roomName) {
 
 RoomVisual.drawRoomGrid = function(grid, roomName) {
     let RV = new RoomVisual(roomName)
-
+    grid = JSON.parse(grid)
+    
     for (let i in grid) {
         let y = Math.floor(i/50)
         let x = i - y*50
