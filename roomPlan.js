@@ -1,22 +1,68 @@
 'use strict'
 
-Room.placeBunker = function(roomName, size = 7) {
-    let tRoom = Game.rooms[roomName]
-    if (_.isUndefined(tRoom)) {
-        return false
+Room.prototype.generateMatrix = function(bunker = false) {
+    // bunker should be bunker position
+
+    let grid = new RoomGrid(50, 50)
+    let terrain = this.getTerrain()
+
+    let bunkerPos = []
+
+    if (bunker !== false) {
+        let posObj = RoomPosition.parse(bunker)
+        for (let i in Memory.Blueprints.Bunker) {
+            for (let v in Memory.Blueprints.Bunker[i]) {
+                if (Memory.Blueprints.Bunker[i][v] == STRUCTURE_ROAD) {
+                    continue
+                }
+                let dx = Number(i.substr(0, 3))
+                let dy = Number(i.substr(3, 3))
+                
+                grid.set(posObj.x+dx, posObj.y+dy, 1)
+
+            }
+        }
     }
-
-    let terrain = Game.map.getRoomTerrain(roomName)
-
-    let grid = new Grid(50, 50)
-    let toAvoid = {
-        1: [..._.map(tRoom.find(FIND_SOURCES), s => s.pos), ..._.map(tRoom.find(FIND_MINERALS), s => s.pos)],
-        0: [tRoom.controller.pos]
+    
+    for (let i in blueprint[level]) {
+        let dx = Number(i.substr(0, 3))
+        let dy = Number(i.substr(3, 3))
+        let newPos = posObj.add(dx, dy)
+        this.addStructure(RoomPosition.serialize(newPos), blueprint[level][i])
     }
 
     for (let v = 0; v <= 49; v++) {
         for (let i = 0; i <= 49; i++) {
-            let newPos = new RoomPosition(i, v, roomName)
+            let newPos = new RoomPosition(i, v, this.name)
+
+            if (newPos.isOnEdge() || newPos.isNearExit()) {
+                grid.set(i, v, 0)
+                continue
+            }
+
+            if (terrain.get(i, v) == 1) {
+                grid.set(i, v, 1)
+            }
+        }
+    }
+
+    this.memory.roomGrid = grid.data
+    return grid
+}
+
+Room.prototype.placeBunker = function(size = 7) {
+
+    let terrain = this.getTerrain()
+
+    let grid = new Grid(50, 50)
+    let toAvoid = {
+        1: [..._.map(this.find(FIND_SOURCES), s => s.pos), ..._.map(this.find(FIND_MINERALS), s => s.pos)],
+        2: [this.controller.pos]
+    }
+
+    for (let v = 0; v <= 49; v++) {
+        for (let i = 0; i <= 49; i++) {
+            let newPos = new RoomPosition(i, v, this.name)
 
             if (newPos.isOnEdge() || newPos.isNearExit()) {
                 grid.set(i, v, 0)
