@@ -756,6 +756,18 @@ Room.prototype.fireTowers = function() {
     }
 }
 
+Room.prototype.updateSourcePathes = function() {
+    let storagePos = RoomPosition.serialize(this.storage.pos)
+    for (let i in this.memory.sources) {
+        let newPath = PathFinder.search(this.storage.pos, RoomPosition.parse(this.memory.sources[i].container), {ignoreRoads: true, maxRooms: 4, ignoreCreeps: true, range: 0})
+
+        let serPath = PathFinder.serialize(newPath.path)
+
+        this.memory.sources[i].path = serPath
+        this.memory.sources[i].pathLength = newPath.path.length
+    }
+}
+
 //      //      //      //      //      //      //      //      //      //      //      //
 
 //      //      //      //      //      //      //      //      //      //      //      //
