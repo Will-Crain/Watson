@@ -411,8 +411,8 @@ Room.prototype.setup = function() {
     this.memory.stack = [[`RCL${this.controller.level}`, {}]]
     this.memory.queue = []
     this.memory.conLevel = 0
-    this.memory.takeFrom =  [RoomPosition.serialize(this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_SPAWN})[0].pos)]
-    this.memory.storeTo =   [RoomPosition.serialize(this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_SPAWN})[0].pos)]
+    this.memory.takeFrom =  [this.getTake(RESOURCE_ENERGY)]
+    this.memory.storeTo =   [this.getStore(RESOURCE_ENERGY)]
     this.memory.Bunker = ''
     this.memory.constructionSites = 0
     this.memory.mineRooms = {}
@@ -795,6 +795,27 @@ Room.prototype.getBestBody = function(body, cap=this.energyCapacityAvailable) {
     }
 
     return _.sortBy(calcBod, (v, k) => _.indexOf(BODY_ORDER, v))
+}
+
+Room.prototype.getMinerBody = function(energyCapacity = 3000, roads = false) {
+    let carryParts = 1
+    let workParts = Math.ceil(energyCapacity/ENERGY_REGEN_TIME/HARVEST_POWER)
+    let moveParts = roads ? Math.ceil(workParts/2) : workParts
+
+    if (carryParts + workParts + moveParts > 50) {
+        return false
+    }
+
+    let body = [MOVE]
+
+    for (let i in workParts) {
+        body.push(WORK)
+    }
+    for (let i in moveParts) {
+        body.push(MOVE)
+    }
+
+    return body
 }
 
 Room.prototype.getHaulerBody = function(dist, energyCapacity = 3000, roads = false) {
