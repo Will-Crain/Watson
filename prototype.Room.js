@@ -585,6 +585,7 @@ Room.prototype.checkToBuild = function() {
 }
 Room.prototype.buildQueue = function() {
     let maxBuildSites = 10
+
     if (this.memory.buildQueue.length == 0) {
         return 'EMPTY'
     }
@@ -600,7 +601,6 @@ Room.prototype.buildQueue = function() {
             if (_.isUndefined(this.memory.structures[index])) {
                 _.remove(this.memory.buildQueue, index)
                 this.memory.structures[index] = undefined
-                continue
             }
         }
 
@@ -776,7 +776,7 @@ Room.prototype.getBestBody = function(body, cap=this.energyCapacityAvailable) {
     // be wary of starving room of energy
 
     let filler = _.any(this.memory.Creeps, s => s.role == 'EXTENSIONER' && _.isUndefined(Game.creeps[s]))
-    if (filler == false && this.memory.eventFlags[2] && this.memory.eventFlags[2]['01EXTENSIONS'] == true) {
+    if (filler == false) {
         cap = Math.min(this.energyAvailable, 300)
     }
 

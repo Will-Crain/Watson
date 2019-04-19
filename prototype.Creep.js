@@ -29,9 +29,9 @@ Creep.prototype.runUpgrade = function(scope) {
     
     if (this.carry.energy === 0) {
         if (cont == true) {
-            let getTake = homeRoom.getTake(RESOURCE_ENERGY)
+            let getTake = homeRoom.controller.pos.findClosestByRange(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_CONTAINER})
             if (getTake != false) {
-                this.pushState('PickUp', {posStr: getTake, res: RESOURCE_ENERGY})
+                this.pushState('PickUp', {posStr: RoomPosition.serialize(getTake.pos), res: RESOURCE_ENERGY})
             }
             else {
                 this.pushState('Wait', {until: Game.time+5})
