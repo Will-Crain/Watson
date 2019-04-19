@@ -751,6 +751,7 @@ Creep.prototype.runNoRespawn = function(scope) {
     else {
         meCreep.removeOnDeath = true
     }
+    this.popState()
 }
 
 Creep.prototype.getBodyCost = function() {
