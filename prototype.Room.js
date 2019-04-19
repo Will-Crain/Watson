@@ -776,7 +776,7 @@ Room.prototype.getBestBody = function(body, cap=this.energyCapacityAvailable) {
     // be wary of starving room of energy
 
     let filler = _.any(this.memory.Creeps, s => s.role == 'EXTENSIONER' && _.isUndefined(Game.creeps[s]))
-    if (filler == false) {
+    if (filler == false && this.memory.eventFlags[2] && this.memory.eventFlags[2]['01EXTENSIONS'] == true) {
         cap = Math.min(this.energyAvailable, 300)
     }
 

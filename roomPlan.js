@@ -1,52 +1,81 @@
 'use strict'
 
-Room.prototype.generateMatrix = function(bunker = false) {
-    // bunker should be bunker position
-
+Room.prototype.generateMatrix = function(bunker = this.memory.Bunker) {
     let grid = new RoomGrid(50, 50)
+    let cmrx = new PathFinder.CostMatrix
+
     let terrain = this.getTerrain()
+    let posObj = RoomPosition.parse(bunker)
+    let rName = this.name
 
     let bunkerPos = []
-
-    if (bunker !== false) {
-        let posObj = RoomPosition.parse(bunker)
-        for (let i in Memory.Blueprints.Bunker) {
-            for (let v in Memory.Blueprints.Bunker[i]) {
-                if (Memory.Blueprints.Bunker[i][v] == STRUCTURE_ROAD) {
-                    continue
-                }
-                let dx = Number(i.substr(0, 3))
-                let dy = Number(i.substr(3, 3))
-                
-                grid.set(posObj.x+dx, posObj.y+dy, 1)
-
-            }
-        }
-    }
-    
-    for (let i in blueprint[level]) {
-        let dx = Number(i.substr(0, 3))
-        let dy = Number(i.substr(3, 3))
-        let newPos = posObj.add(dx, dy)
-        this.addStructure(RoomPosition.serialize(newPos), blueprint[level][i])
-    }
 
     for (let v = 0; v <= 49; v++) {
         for (let i = 0; i <= 49; i++) {
             let newPos = new RoomPosition(i, v, this.name)
-
+        
             if (newPos.isOnEdge() || newPos.isNearExit()) {
-                grid.set(i, v, 0)
+                grid.set(i, v, 255)
+                cmrx.set(i, v, 255)
                 continue
             }
 
             if (terrain.get(i, v) == 1) {
-                grid.set(i, v, 1)
+                grid.set(i, v, 255)
+                cmrx.set(i, v, 255)
+                continue
+            }
+
+            grid.set(i, v, 2)
+            cmrx.set(i, v, 2)
+        }
+    }
+
+    if (!_.isUndefined(bunker)) {
+        for (let i in Memory.Blueprints.Bunker) {
+            for (let v in Memory.Blueprints.Bunker[i]) {
+                let dx = Number(v.substr(0, 3))
+                let dy = Number(v.substr(3, 3))
+
+                grid.setStructure(posObj.x+dx, posObj.y+dy, Memory.Blueprints.Bunker[i][v])
+
+                if (Memory.Blueprints.Bunker[i][v] == STRUCTURE_ROAD) {
+                    cmrx.set(posObj.x+dx, posObj.y+dy, 1)
+                }
+                else {
+                    cmrx.set(posObj.x+dx, posObj.y+dy, 255)
+                }
             }
         }
     }
 
-    this.memory.roomGrid = grid.data
+    let pathTo = {
+        1: [..._.map(this.find(FIND_SOURCES), s => s.pos), _.map(this.find(FIND_MINERALS), s => s.pos)],
+        2:  [this.controller.pos]
+    }
+
+    for (let i in pathTo) {
+        for (let v in pathTo[i]) {
+            let path = PathFinder.search(posObj, {pos: pathTo[i][v], range: i}, {plainCost: 2, swampCost: 5, 
+                roomCallback: function(roomName) {
+                    return cmrx
+                }
+            })
+            for (let d in path.path) {
+
+                if (d < path.path.length-1) {
+                    grid.setStructure(path.path[d].x, path.path[d].y, STRUCTURE_ROAD)
+                    cmrx.set(path.path[d].x, path.path[d].y, 1)
+                }
+                else {
+                    grid.setStructure(path.path[d].x, path.path[d].y, STRUCTURE_CONTAINER)
+                    cmrx.set(path.path[d].x, path.path[d].y, 255)
+                }
+            }
+        }
+    }
+
+    this.memory.roomGrid = grid.structures
     return grid
 }
 

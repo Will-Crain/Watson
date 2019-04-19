@@ -238,7 +238,7 @@ Creep.prototype.runBuild = function(scope) {
     let {posStr, getPosStr = false} = scope
     let posObj = RoomPosition.parse(posStr).lookFor(LOOK_CONSTRUCTION_SITES)[0]
     
-    if (!posObj) {
+    if (_.isUndefined(posObj)) {
         this.popState()
     }
     
@@ -253,7 +253,7 @@ Creep.prototype.runBuild = function(scope) {
     }
     else {
 
-        if (!posObj) {
+        if (_.isUndefined(posObj)) {
             this.popState()
         }
 
