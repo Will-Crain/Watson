@@ -698,7 +698,7 @@ Room.prototype.sendBiters = function(roomName, amnt=2) {
 
 Room.prototype.defend = function() {
     let hostileCreeps = [...this.find(FIND_HOSTILE_POWER_CREEPS), ...this.find(FIND_HOSTILE_CREEPS)]
-    if (hostileCreeps.length > 0 && !_.any(this.memory.Creeps, s => s.role == 'DEFENSE_MELEE')) {
+    if (hostileCreeps.length > 0 && !_.any(this.memory.Creeps, s => s.role == 'DEFENSE_MELEE') && _.any(hostileCreeps.owner.username != 'Invader')) {
         this.addCreep('DEFENSE_MELEE', [['DefenseMelee', {}]])
     }
 
