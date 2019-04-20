@@ -95,6 +95,7 @@ RoomObject.prototype.popState = function() {
     if (!_.isUndefined(this.memory) && !this.memory.recursionCount) {
         this.memory.recursionCount = 0
     }
+    
 
     let runNext = false
     if (this.memory.recursionCount < RECURSION_DEPTH) {
