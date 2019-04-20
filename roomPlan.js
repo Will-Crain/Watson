@@ -90,6 +90,7 @@ Room.prototype.populateMatrix = function() {
             let dy = Number(v.substr(3, 3))
 
             grid.setStructure(posObj.x+dx, posObj.y+dy, Memory.Blueprints.Bunker[i][v])
+            grid.setRCL(posObj.x+dx, posObj.y+dy, i)
 
             if (Memory.Blueprints.Bunker[i][v] == STRUCTURE_ROAD) {
                 grid.set(posObj.x+dx, posObj.y+dy, 1)
@@ -118,34 +119,45 @@ Room.prototype.populateMatrix = function() {
             for (let d in path.path) {
                 if (i == 1) {
                     if (d < path.path.length-i) {
+                        let priority = (PRIORITY_BY_STRUCTURE[STRUCTURE_ROAD] + (1-(d/path.path.length))).toFixed(4)
+
                         grid.setStructure(path.path[d].x, path.path[d].y, STRUCTURE_ROAD)
                         grid.set(path.path[d].x, path.path[d].y, 1)
+                        grid.setRCL(path.path[d].x, path.path[d].y, 3)
+                        grid.setPriority(path.path[d].x, path.path[d].y, priority)
                     }
                     else {
                         grid.setStructure(path.path[d].x, path.path[d].y, STRUCTURE_CONTAINER)
                         grid.set(path.path[d].x, path.path[d].y, 2)
+                        grid.setRCL(path.path[d].x, path.path[d].y, 1)
                     }
                 }
                 else if (i == 2) {
 
                     if (d < path.path.length - 2) {
+                        let priority = (PRIORITY_BY_STRUCTURE[STRUCTURE_ROAD] + (1-(d/path.path.length))).toFixed(4)
+
                         grid.setStructure(path.path[d].x, path.path[d].y, STRUCTURE_ROAD)
                         grid.set(path.path[d].x, path.path[d].y, 1)
+                        grid.setRCL(path.path[d].x, path.path[d].y, 3)
+                        grid.setPriority(path.path[d].x, path.path[d].y, priority)
                     }
                     else if (d == path.path.length - 2) {
                         grid.setStructure(path.path[d].x, path.path[d].y, STRUCTURE_CONTAINER)
                         grid.set(path.path[d].x, path.path[d].y, 2)
+                        grid.setRCL(path.path[d].x, path.path[d].y, 1)
                     }
                     else if (d == path.path.length - 1) {
                         grid.setStructure(path.path[d].x, path.path[d].y, STRUCTURE_LINK)
                         grid.set(path.path[d].x, path.path[d].y, 255)
+                        grid.setRCL(path.path[d].x, path.path[d].y, 5)
                     }
                 }
             }
         }
     }
 
-    Memory.RoomCache[this.name] = {grid: grid.outData(), structures: grid.outStructures()}
+    Memory.RoomCache[this.name] = {data: grid.outData(), structures: grid.outStructures(), priority: grid.outPriority(), RCL: grid.outRCL()}
     return grid
 }
 
