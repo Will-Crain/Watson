@@ -281,9 +281,10 @@ Creep.prototype.runFindBuild = function(scope) {
 
     if (conSites.length == 0) {
         this.pushState('NoRespawn', {})
+        this.pushState('Upgrade', {cont: true})
     }
     else {
-        let targetSite = _.max(conSites, s => PRIORITY_BY_STRUCTURE[s.structureType])
+        let targetSite = _.max(conSites, s => homeRoom.memory.structures[`${RoomPosition.serialize(s.pos)}${s.structureType}`].priority || PRIORITY_BY_STRUCTURE[s.structureType])
         this.pushState('Build', {posStr: RoomPosition.serialize(targetSite.pos), getPosStr: homeRoom.getTake()})
     }
 }
@@ -579,6 +580,7 @@ Creep.prototype.runDefenseMelee = function(scope) {
             }
             else {
                 meCreep.removeOnDeath = true
+                this.pushState('Wait', {until: Game.time+100})
             }
         }
         else {

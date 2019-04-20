@@ -604,7 +604,7 @@ Room.prototype.buildQueue = function() {
             }
         }
 
-        this.memory.buildQueue = _.sortBy(this.memory.buildQueue, s => PRIORITY_BY_STRUCTURE[this.memory.structures[s].structureType]).reverse()
+        this.memory.buildQueue = _.sortBy(this.memory.buildQueue, s => this.memory.structures[s].priority || PRIORITY_BY_STRUCTURE[this.memory.structures[s].structureType]).reverse()
         for (let i = 0; i < Math.min((maxBuildSites - this.memory.constructionSites), this.memory.buildQueue.length); i++) {
             
 
@@ -648,7 +648,7 @@ Room.prototype.removeBuildQueue = function(idStr) {
     _.remove(this.memory.buildQueue, idStr)
 }
 
-Room.prototype.saturateSource = function(posStr) {
+Room.prototype.saturateSource = function(posStr, energyCapacity = 3000, road = false) {
     let numSources = _.keys(this.memory.sources).length
     let minerPriority = 3 + (0.01 + 0.01*(numSources-1)*2)
     let haulerPriority = minerPriority + 0.01
@@ -656,7 +656,7 @@ Room.prototype.saturateSource = function(posStr) {
     let thisSource = this.memory.sources[posStr]
 
     this.addCreep('ENERGY_MINER', [['Mine', {standPosStr: thisSource.container, minePosStr: posStr}]], minerPriority)
-    this.addCreep('HAULER', [['Haul', {pickUp: thisSource.container, dist: thisSource.pathLength, dropOff: _.first(this.memory.storeTo)}]], haulerPriority, false, this.getHaulerBody(thisSource.pathLength))
+    this.addCreep('HAULER', [['Haul', {pickUp: thisSource.container, dist: thisSource.pathLength, dropOff: _.first(this.memory.storeTo)}]], haulerPriority, false, this.getHaulerBody(thisSource.pathLength, energyCapacity, road))
 }
 
 Room.prototype.addSource = function(posStr, saturate = true) {
@@ -902,7 +902,7 @@ Room.prototype.addRoadFromPath = function(pathStr, placeOnLast = false) {
         if (placeOnLast && i == path.length-1) {
             break
         }
-        this.addStructure(path[i], STRUCTURE_ROAD, PRIORITY_BY_STRUCTURE[STRUCTURE_ROAD] + 1*(path.length-i))
+        this.addStructure(path[i], STRUCTURE_ROAD, PRIORITY_BY_STRUCTURE[STRUCTURE_ROAD] + 1*(path.length-i)/path.length)
     }
 }
 
