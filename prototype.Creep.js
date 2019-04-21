@@ -611,7 +611,7 @@ Creep.prototype.runCleanupRoom = function(scope) {
         this.pushState('MoveTo', {posStr: RoomPosition.serialize(roomPos), exitOnRoom: true})
     }
     else {
-        let noKill = ['container', 'controller', 'road', 'wall', 'rampart']
+        let noKill = ['container', 'controller', 'road', 'constructed_wall', 'rampart']
         let structures = this.room.find(FIND_STRUCTURES, {filter: s => !noKill.includes(s.structureType)})
         if (structures.length > 0) {
             let targetStructure = _.last(_.sortBy(structures, s => PRIORITY_BY_STRUCTURE[s.structureType]))
