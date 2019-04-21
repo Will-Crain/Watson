@@ -2,11 +2,11 @@
 
 RoomVisual.drawLineText = function(rName, x, y, text, indents=0, opts = {}) {
     let RV = new RoomVisual(rName)
-    opts.font = 0.4
+    opts.font = 0.2
     opts.align = 'left'
-    RV.text(text, x+(indents*0.5), y, opts)
+    RV.text(text, x+(indents*0.25), y, opts)
     
-    return [x, y+0.5]
+    return [x, y+0.25]
 }
 
 RoomVisual.drawRange = function(posStr, r) {
