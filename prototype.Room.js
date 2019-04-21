@@ -668,9 +668,9 @@ Room.prototype.addSource = function(posStr, saturate = true) {
     }
     
     let dropOffSpot = RoomPosition.parse(_.first(this.memory.takeFrom))
-    let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 5})
+    let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 5, plainCost: 2, swampCost: 5})
     objPath.path.pop()
-    
+
     let serPath = PathFinder.serialize(objPath.path)
     let pathLength = objPath.path.length
         
