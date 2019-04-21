@@ -532,14 +532,14 @@ Room.prototype.checkToBuild = function() {
 
     for (let i in this.memory.structures) {
         // If there is no id, or there is no object by id
-        if (this.memory.structures[i].id == '' || _.isUndefined(this.memory.structures[i].id) || _.isUndefined(Game.getObjectById(this.memory.structures[i].id))) {
+        if (this.memory.structures[i].id == '' || _.isUndefined(this.memory.structures[i].id) || _.isNull(Game.getObjectById(this.memory.structures[i].id))) {
             let posObj = RoomPosition.parse(this.memory.structures[i].posStr)
             let roomObj = Game.rooms[posObj.roomName]
             if (_.isUndefined(roomObj)) {
                 // cry, no vision
             }
             else {
-                let struct = _.find(posObj.lookFor(LOOK_STRUCTURES, s => s.structureType == this.memory.structures[i].structureType))
+                let struct = _.find(posObj.lookFor(LOOK_STRUCTURES), s => s.structureType == this.memory.structures[i].structureType)
 
                 // If the structure exists
                 if (!_.isUndefined(struct)) {
@@ -560,27 +560,27 @@ Room.prototype.checkToBuild = function() {
             }
         }
         // Repair sequence
-        else {
-            if (_.any(this.memory.Creeps, s => s.role == 'REPAIRER')) {
-                continue
-            }
+        // else {
+        //     if (_.any(this.memory.Creeps, s => s.role == 'REPAIRER')) {
+        //         continue
+        //     }
 
-            let toRepair = ['road', 'container']
-            if (toRepair.includes(this.memory.structures[i].structureType)) {
-                let posObj = RoomPosition.parse(this.memory.structures[i].posStr)
-                let struct = _.find(posObj.lookFor(LOOK_STRUCTURES, s => s.structureType == this.memory.structures[i].structureType))
-                let partsToRepair = Math.floor((struct.hitsMax - struct.hits) / REPAIR_POWER)
-                if (partsToRepair > 2) {
-                    if (!targetRooms.includes(struct.pos.roomName)) {
-                        targetRooms.push()
-                    }
-                }
-                sumRepair += partsToRepair
-            }
-            if (sumRepair > this.controller.level*5) {
-                this.addCreep('REPAIRER', [['FindRepair', {targetRooms: targetRooms}]], false)
-            }
-        }
+        //     let toRepair = ['road', 'container']
+        //     if (toRepair.includes(this.memory.structures[i].structureType)) {
+        //         let posObj = RoomPosition.parse(this.memory.structures[i].posStr)
+        //         let struct = _.find(posObj.lookFor(LOOK_STRUCTURES, s => s.structureType == this.memory.structures[i].structureType))
+        //         let partsToRepair = Math.floor((struct.hitsMax - struct.hits) / REPAIR_POWER)
+        //         if (partsToRepair > 2) {
+        //             if (!targetRooms.includes(struct.pos.roomName)) {
+        //                 targetRooms.push()
+        //             }
+        //         }
+        //         sumRepair += partsToRepair
+        //     }
+        //     if (sumRepair > this.controller.level*5) {
+        //         this.addCreep('REPAIRER', [['FindRepair', {targetRooms: targetRooms}]], false)
+        //     }
+        // }
     }
 }
 Room.prototype.buildQueue = function() {
@@ -618,7 +618,7 @@ Room.prototype.buildQueue = function() {
             }
             
             let conSite = posObj.createConstructionSite(obj.structureType)
-
+            console.log(conSite, obj.structureType)
             if (conSite == 0) {
                 _.remove(this.memory.buildQueue, s => s == index)
             }
@@ -641,8 +641,7 @@ Room.prototype.addBuildQueue = function(posStr, structureType, priority) {
     if (this.memory.buildQueue.includes(combinedStr)) {
         return
     }
-    let insertIndex = _.sortedLastIndex(this.memory.buildQueue, this.memory.structures, 'priority')
-    this.memory.buildQueue.splice(insertIndex, 0, combinedStr)
+    this.memory.buildQueue.push(combinedStr)
 }
 Room.prototype.removeBuildQueue = function(idStr) {
     _.remove(this.memory.buildQueue, idStr)
@@ -740,10 +739,11 @@ Room.prototype.defend = function() {
 }
 
 Room.prototype.fireTowers = function() {
-    let hostileCreeps = this.find(FIND_HOSTILE_CREEPS, {filter: s => !s.pos.isOnEdge() || !s.pos.isNearExit()})
+    let hostileCreeps = this.find(FIND_HOSTILE_CREEPS, {filter: s => !s.pos.isOnEdge() && !s.pos.isNearExit()})
     if (hostileCreeps.length == 0) {
         return
     }
+
     let targets = _.sortBy(hostileCreeps, s => s.getHealing())
     let towers = this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_TOWER})
 
@@ -752,7 +752,7 @@ Room.prototype.fireTowers = function() {
     }
 
     for (let i in towers) {
-        towers[i].attack(_.last(hostileCreeps))
+        towers[i].attack(_.first(hostileCreeps))
     }
 }
 
@@ -775,9 +775,10 @@ Room.prototype.updateSourcePathes = function() {
 Room.prototype.getBestBody = function(body, cap=this.energyCapacityAvailable) {
     // be wary of starving room of energy
 
-    let filler = _.any(this.memory.Creeps, s => s.role == 'EXTENSIONER' && _.isUndefined(Game.creeps[s]))
-    if (filler == false) {
-        cap = Math.min(this.energyAvailable, 300)
+    let filler = _.find(this.memory.Creeps, s => s.role == 'EXTENSIONER' && !_.isUndefined(Game.creeps[s]))
+
+    if (_.isUndefined(filler)) {
+        cap = Math.max(this.energyAvailable, 300)
     }
 
     let calcCost = 0
