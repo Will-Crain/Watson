@@ -38,13 +38,7 @@ RoomVisual.showRoom = function(obj) {
         res = RoomVisual.drawLineText(obj.name, currX, currY, 'Build: Empty', 1)
     }
     else {
-        let outstr = ''
-        let countedBy = _.countBy(obj.memory.buildQueue, s => obj.memory.structures[s].structureType)
-        
-        for (let i in countedBy) {
-            outstr += `${i}: ${countedBy[i]}`
-        }
-        res = RoomVisual.drawLineText(obj.name, currX, currY, `Build: ${outstr}`, 1)
+        res = RoomVisual.drawLineText(obj.name, currX, currY, `Build: ${obj.memory.buildQueue}`, 1)
     }
     currX = res[0]
     currY = res[1]
