@@ -217,11 +217,12 @@ Creep.prototype.runFindRepair = function(scope) {
         let noRepair = ['wall', 'rampart', 'controller']
 
         for (let i in homeRoom.memory.mineRooms) {
+            if (_.isUndefined(Game.rooms[i])) {
+                continue
+            }
             let addTo = Game.rooms[i].find(FIND_STRUCTURES, {filter: s => this.getRepairPower() <= (s.hitsMax -s.hits) && (s.hits/s.hitsMax) <= REPAIR_THRESHOLD_BY_STRUCTURE[s.structureType]})
             toRepair.push(...addTo)
         }
-
-        console.log(toRepair.length)
 
         if (toRepair.length == 0) {
             let conPos = RoomPosition.serialize(this.room.controller.pos)
@@ -344,6 +345,10 @@ Creep.prototype.runMine = function(scope) {
         this.pushState('MoveTo', {posStr: standPosStr, range: 0})
     }
     else {
+        let road = _.find(standPosObj.lookFor(LOOK_STRUCTURES, s => s.structureType == STRUCTURE_ROAD))
+        if (!_.isUndefined(road)) {
+            this.dismantle(road)
+        }
         let minePosObj = RoomPosition.parse(minePosStr)
         let mineObj = _.first(minePosObj.lookFor(LOOK_SOURCES))
         let energyPerMine = this.getMinePower()
@@ -502,7 +507,6 @@ Creep.prototype.runDismantle = function(scope) {
     else {
         for (let i in targetList) {
             let target = RoomPosition.parse(targetList[i])
-            console.log(target)
             let targetStructure = _.find(target.lookFor(LOOK_STRUCTURES), s => s.structureType !== STRUCTURE_ROAD)
 
             if (_.isUndefined(targetStructure)) {
@@ -680,7 +684,6 @@ Creep.prototype.runReserve = function(scope) {
         this.pushState('MoveTo', {posStr: RoomPosition.serialize(roomPos), exitOnRoom: true})
     }
     else {
-        let cPosStr = RoomPosition.serialize(this.room.controller.pos)
         if (this.pos.inRangeTo(this.room.controller, 1)) {
             if (this.room.controller.sign.text !== message) {
                 this.signController(this.room.controller, message)
@@ -690,7 +693,23 @@ Creep.prototype.runReserve = function(scope) {
             }
         }
         else {
-            this.pushState('MoveTo', {posStr: cPosStr})
+            let conAdj = this.room.controller.pos.getAdjacent()
+            let cPosStr = false
+    
+            for (let i in conAdj) {
+                let adjPos = RoomPosition.parse(conAdj[i])
+                if (adjPos.lookFor(LOOK_STRUCTURES).length == 0) {
+                    cPosStr = conAdj[i]
+                }
+            }
+            
+            if (cPosStr == false) {
+                this.pushState('MoveTo', {posStr: RoomPosition.serialize(this.controller.pos), range: 1})
+            }
+            else {
+                this.pushState('MoveTo', {posStr: cPosStr, range: 0})
+
+            }
         }
     }
 
@@ -787,7 +806,7 @@ Creep.prototype.getHealingPower = function() {
 
     let sum = 0
     for (let bst in healParts) {
-        sum += mults[bst] * healPart[bst] * 12
+        sum += mults[bst] * healParts[bst] * 12
     }
 
     return sum
