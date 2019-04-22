@@ -1,6 +1,6 @@
 'use strict'
 
-Number.prototype.addLeadingZeros = function(size, sign=false) {
+Number.prototype.addLeadingZeros = function(size, sign = false) {
   let negative = this < 0
   let outStr = String(Math.abs(this))
   
