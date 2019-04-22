@@ -11,6 +11,14 @@ Room.prototype.standardRuntime = function() {
 
 Room.prototype.runRCL1 = function(scope) {
     
+    if (_.isUndefined(this.memory.structures)) {
+        this.setup()
+    }
+
+    if (this.memory.Bunker == '') {
+        return
+    }
+
     // Initial setup
     if (this.memory.conLevel < this.controller.level && this.controller.level == 1) {
         
@@ -20,12 +28,12 @@ Room.prototype.runRCL1 = function(scope) {
             return
         }
         
-        if (this.memory.Bunker == '') {
-            let bunkerPos = spawn.pos.add(0, -2)
-            this.memory.Bunker = RoomPosition.serialize(bunkerPos)
-        }
+        // if (this.memory.Bunker == '') {
+        //     let bunkerPos = spawn.pos.add(0, -2)
+        //     this.memory.Bunker = RoomPosition.serialize(bunkerPos)
+        // }
             
-        this.addFromBlueprint(this.memory.Bunker, Memory.Blueprints.Bunker, this.controller.level)
+        // this.addFromBlueprint(this.memory.Bunker, Memory.Blueprints.Bunker, this.controller.level)
         
         
         this.memory.eventFlags = {}
@@ -33,20 +41,20 @@ Room.prototype.runRCL1 = function(scope) {
         this.memory.eventFlags[1]['01CONTAINER'] = false
         
         
-        let spawnPos = this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_SPAWN})[0].pos
-        let controllerPos = this.controller.pos
+        // let spawnPos = this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_SPAWN})[0].pos
+        // let controllerPos = this.controller.pos
         
-        let fromSpawnToController = spawnPos.findPathTo(controllerPos, {ignoreRoads: true, maxRooms: 1, ignoreCreeps: true, ignoreDestructibleStructures: true})
+        // let fromSpawnToController = spawnPos.findPathTo(controllerPos, {ignoreRoads: true, maxRooms: 1, ignoreCreeps: true, ignoreDestructibleStructures: true})
         
-        let {x, y} = (fromSpawnToController.reverse())[4]
-        let containerPos = new RoomPosition(x, y, this.name)
+        // let {x, y} = (fromSpawnToController.reverse())[4]
+        // let containerPos = new RoomPosition(x, y, this.name)
         
-        this.addStructure(RoomPosition.serialize(containerPos), STRUCTURE_CONTAINER, 5)
+        // this.addStructure(RoomPosition.serialize(containerPos), STRUCTURE_CONTAINER, 5)
         
         let sources = this.find(FIND_SOURCES)
 
         for (let i in sources) {
-            this.addSource(RoomPosition.serialize(sources[i].pos))
+            this.addSource(RoomPosition.serialize(sources[i].pos), false)
         }
 
         let memSources = this.memory.sources
@@ -317,7 +325,7 @@ Room.prototype.runRCL8 = function(scope) {
 //      //      //      //      //      //      //      //      //      //      //      //  
 
 Room.prototype.claimRoom = function(roomName) {
-    // Automate bunker placement
+    this.addCreep('CLAIMER', [['Claim', {roomName: roomName}]])
 }
 
 Room.prototype.addFromBlueprint = function(posStr, blueprint, level) {
@@ -334,7 +342,8 @@ Room.prototype.addFromBlueprint = function(posStr, blueprint, level) {
 Room.prototype.getTake = function(resourceType = RESOURCE_ENERGY) {
 
     let fromSpawn = true
-    if (this.memory.takeFrom.length > 1) {
+
+    if (!_.isUndefined(this.memory.takeFrom) || this.memory.takeFrom.length > 1) {
         fromSpawn = false
     }
     
@@ -342,6 +351,11 @@ Room.prototype.getTake = function(resourceType = RESOURCE_ENERGY) {
         for (let i in this.memory.takeFrom) {
             let posObj = RoomPosition.parse(this.memory.takeFrom[i])
             let obj = posObj.lookFor(LOOK_STRUCTURES)[0]
+
+            if (_.isUndefined(obj)) {
+                continue
+            }
+
             if (obj.structureType == STRUCTURE_SPAWN && fromSpawn == false) {
                 continue
             }
@@ -358,6 +372,10 @@ Room.prototype.getTake = function(resourceType = RESOURCE_ENERGY) {
         for (let i in this.memory.takeFrom) {
             let posObj = RoomPosition.parse(this.memory.takeFrom[i])
             let obj = posObj.lookFor(LOOK_STRUCTURE)[0]
+            
+            if (_.isUndefined(obj)) {
+                continue
+            }
             
             if (!obj.store) {
                 continue
@@ -377,6 +395,10 @@ Room.prototype.getStore = function(resourceType = RESOURCE_ENERGY) {
             let posObj = RoomPosition.parse(this.memory.storeTo[i])
             let obj = posObj.lookFor(LOOK_STRUCTURES)[0]
             
+            if (_.isUndefined(obj)) {
+                continue
+            }
+
             if (obj.energy !== undefined && obj.energy < obj.energyCapacity) {
                 return this.memory.storeTo[i]
             }
@@ -390,6 +412,10 @@ Room.prototype.getStore = function(resourceType = RESOURCE_ENERGY) {
             let posObj = RoomPosition.parse(this.memory.storeTo[i])
             let obj = posObj.lookFor(LOOK_STRUCTURE)[0]
             
+            if (_.isUndefined(obj)) {
+                continue
+            }
+
             if (obj.carry == undefined) {
                 return false
             }
@@ -404,21 +430,25 @@ Room.prototype.getStore = function(resourceType = RESOURCE_ENERGY) {
 }
 
 Room.prototype.setup = function() {
-    this.memory.toRCL = {1: 0}
+    this.memory.toRCL = {1: Game.time}
     this.memory.sources = {}
     this.memory.Creeps = {}
     this.memory.creepCount = 0
     this.memory.stack = [[`RCL${this.controller.level}`, {}]]
     this.memory.queue = []
     this.memory.conLevel = 0
-    this.memory.takeFrom =  [this.getTake(RESOURCE_ENERGY)]
-    this.memory.storeTo =   [this.getStore(RESOURCE_ENERGY)]
     this.memory.Bunker = ''
     this.memory.constructionSites = 0
     this.memory.mineRooms = {}
 
     this.memory.buildQueue = []
     this.memory.structures = {}
+
+    this.populateMatrix()
+
+    let spawn0 = _.find(this.memory.structures, s => s.structureType == STRUCTURE_SPAWN && s.RCL == 1)
+    this.memory.takeFrom =  [spawn0.posStr]
+    this.memory.storeTo =   [spawn0.posStr]
 }
 
 Room.prototype.checkToSpawn = function() {
@@ -479,7 +509,7 @@ Room.prototype.spawnQueue = function() {
 
         let creepToSpawn = useableSpawns[i].spawnCreep(body, cName, {memory: mem})
         if (creepToSpawn == 0) {
-            _.remove(toSpawn, s => s == toSpawn[i])
+            _.remove(toSpawn, s => s == this.memory.queue[i])
         }
         else {
             if (creepToSpawn !== -6) {
@@ -531,6 +561,10 @@ Room.prototype.checkToBuild = function() {
     this.memory.constructionSites = 0
 
     for (let i in this.memory.structures) {
+        if (this.memory.structures[i].RCL && this.memory.structures[i].RCL > this.controller.level) {
+            continue
+        }
+
         // If there is no id, or there is no object by id
         if (this.memory.structures[i].id == '' || _.isUndefined(this.memory.structures[i].id) || _.isNull(Game.getObjectById(this.memory.structures[i].id))) {
             let posObj = RoomPosition.parse(this.memory.structures[i].posStr)
@@ -606,9 +640,9 @@ Room.prototype.buildQueue = function() {
     }
 }
 
-Room.prototype.addStructure = function(posStr, structureType, priority=PRIORITY_BY_STRUCTURE[structureType]) {
+Room.prototype.addStructure = function(posStr, structureType, RCL, priority = undefined) {
     let combinedStr = posStr + structureType
-    this.memory.structures[combinedStr] = {posStr: posStr, structureType: structureType, priority: priority, id: ''}
+    this.memory.structures[combinedStr] = {posStr: posStr, structureType: structureType, priority: priority, RCL: RCL, id: ''}
 }
 Room.prototype.removeStructure = function(posStr, structureType) {
     let combinedStr = posStr + structureType
@@ -656,7 +690,7 @@ Room.prototype.saturateSource = function(posStr, energyCapacity = 3000, road = f
     this.addCreep('HAULER', [['Haul', {pickUp: thisSource.container, dist: thisSource.pathLength, dropOff: _.first(this.memory.storeTo)}]], haulerPriority, false, this.getHaulerBody(thisSource.pathLength, energyCapacity, road))
 }
 
-Room.prototype.addSource = function(posStr, saturate = true) {
+Room.prototype.addSource = function(posStr = this.getTake(RESOURCE_ENERGY), saturate = true) {
     let posObj = RoomPosition.parse(posStr)
     let obj = _.first(posObj.lookFor(LOOK_SOURCES))
     
@@ -787,8 +821,6 @@ Room.prototype.getBestBody = function(body, cap = this.energyCapacityAvailable) 
     if (_.last(calcBod) == MOVE && body.length !== 1) {
         calcBod.pop()
     }
-
-    console.log(`Spawned with ${cap}`)
 
     return _.sortBy(calcBod, (v, k) => _.indexOf(BODY_ORDER, v))
 }
