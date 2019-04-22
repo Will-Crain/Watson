@@ -13,7 +13,13 @@ module.exports.loop = function() {
         if (_.isUndefined(Game.rooms[i].controller) || !Game.rooms[i].controller.my) {
             continue
         }
-        Game.rooms[i].invokeState()
+
+        if (Game.rooms[i].memory.conLevel == 0) {
+            Game.rooms[i].setup()
+        }
+        else {
+            Game.rooms[i].invokeState()
+        }
         
         if (Game.rooms[i].memory.conLevel !== undefined) {
             RoomVisual.showRoom(Game.rooms[i])
