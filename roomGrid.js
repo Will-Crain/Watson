@@ -53,6 +53,21 @@ class RoomGrid {
 		return this
 	}
 
+	addStructures(roomName) {
+		for (let i in this.structures) {
+			console.log(i)
+			let y = Math.floor(i/50)
+			let x = Number(i)-Number(y*50)
+
+			console.log(x, y, this.structures[i])
+
+			let newPos = new RoomPosition(x, y, roomName)
+			let posStr = RoomPosition.serialize(newPos)
+
+			Game.rooms[roomName].addStructure(posStr, this.structures[i], this.RCL[i], this.priority[i])
+		}
+	}
+
 	get(x, y) {
 		let pIndex = Number(this.width*y) + Number(x)
 		return this.data[pIndex]
