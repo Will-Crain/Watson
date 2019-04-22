@@ -71,7 +71,7 @@ Room.prototype.populateMatrix = function() {
 
     let terrain = this.getTerrain()
     let bunker = this.memory.Bunker || this.placeBunker()
-    console.log(bunker)
+
     if (bunker == false) {
         return false
     }
@@ -129,7 +129,7 @@ Room.prototype.populateMatrix = function() {
                     else {
                         grid.setStructure(path.path[d].x, path.path[d].y, STRUCTURE_CONTAINER)
                         grid.set(path.path[d].x, path.path[d].y, 2)
-                        grid.setRCL(path.path[d].x, path.path[d].y, 1)
+                        grid.setRCL(path.path[d].x, path.path[d].y, 2)
                     }
                 }
                 else if (i == 2) {
@@ -158,6 +158,7 @@ Room.prototype.populateMatrix = function() {
     }
 
     Memory.RoomCache[this.name] = {data: grid.outData(), structures: grid.outStructures(), priority: grid.outPriority(), RCL: grid.outRCL()}
+    grid.addStructures(this.name)
     return grid
 }
 
