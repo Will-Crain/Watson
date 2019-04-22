@@ -459,7 +459,7 @@ Room.prototype.spawnQueue = function() {
         }
     }
 
-    let toSpawn = _.sortBy(this.memory.queue, s => this.memory.Creeps[s].priority)
+    let toSpawn = _.sortBy(this.memory.queue, s => PRIORITY_BY_ROLE[this.memory.Creeps[s].role] || this.memory.Creeps[s].priority).reverse()
     for (let i in useableSpawns) {
         if (i > toSpawn.length+1) {
             return true
@@ -483,7 +483,7 @@ Room.prototype.spawnQueue = function() {
         }
         else {
             if (creepToSpawn !== -6) {
-                console.log(creepToSpawn)
+                console.log(`SPAWN ERROR:\t${creepToSpawn}\t${cName}`)
             }
         }
     }
@@ -559,28 +559,6 @@ Room.prototype.checkToBuild = function() {
                 }
             }
         }
-        // Repair sequence
-        // else {
-        //     if (_.any(this.memory.Creeps, s => s.role == 'REPAIRER')) {
-        //         continue
-        //     }
-
-        //     let toRepair = ['road', 'container']
-        //     if (toRepair.includes(this.memory.structures[i].structureType)) {
-        //         let posObj = RoomPosition.parse(this.memory.structures[i].posStr)
-        //         let struct = _.find(posObj.lookFor(LOOK_STRUCTURES, s => s.structureType == this.memory.structures[i].structureType))
-        //         let partsToRepair = Math.floor((struct.hitsMax - struct.hits) / REPAIR_POWER)
-        //         if (partsToRepair > 2) {
-        //             if (!targetRooms.includes(struct.pos.roomName)) {
-        //                 targetRooms.push()
-        //             }
-        //         }
-        //         sumRepair += partsToRepair
-        //     }
-        //     if (sumRepair > this.controller.level*5) {
-        //         this.addCreep('REPAIRER', [['FindRepair', {targetRooms: targetRooms}]], false)
-        //     }
-        // }
     }
 }
 Room.prototype.buildQueue = function() {
@@ -598,13 +576,13 @@ Room.prototype.buildQueue = function() {
 
         for (let i in this.memory.buildQueue) {
             let index = this.memory.buildQueue[i]
-            if (_.isUndefined(this.memory.structures[index])) {
-                _.remove(this.memory.buildQueue, index)
+            if (this.memory.structures[index] == undefined || !this.memory.structures[index].priority == undefined) {
+                _.remove(this.memory.buildQueue, s => s == index)
                 this.memory.structures[index] = undefined
             }
         }
 
-        this.memory.buildQueue = _.sortBy(this.memory.buildQueue, s => this.memory.structures[s].priority || PRIORITY_BY_STRUCTURE[this.memory.structures[s].structureType]).reverse()
+        this.memory.buildQueue = _.sortBy(this.memory.buildQueue, s => this.memory.structures[s].priority).reverse()
         for (let i = 0; i < Math.min((maxBuildSites - this.memory.constructionSites), this.memory.buildQueue.length); i++) {
             
 
@@ -612,13 +590,15 @@ Room.prototype.buildQueue = function() {
 
             let obj = this.memory.structures[index]
             let posObj = RoomPosition.parse(obj.posStr)
-            
+            let targetRoom = Game.rooms[posObj.roomName]
+            if (_.isUndefined(targetRoom)) {
+                continue
+            }
             if (posObj.lookFor(LOOK_CONSTRUCTION_SITES).length > 0) {
                 this.memory.buildQueue.shift()
             }
             
             let conSite = posObj.createConstructionSite(obj.structureType)
-            console.log(conSite, obj.structureType)
             if (conSite == 0) {
                 _.remove(this.memory.buildQueue, s => s == index)
             }
@@ -649,8 +629,8 @@ Room.prototype.removeBuildQueue = function(idStr) {
 
 Room.prototype.saturateSource = function(posStr, energyCapacity = 3000, road = false) {
     let numSources = _.keys(this.memory.sources).length
-    let minerPriority = 3 + (0.01 + 0.01*(numSources-1)*2)
-    let haulerPriority = minerPriority + 0.01
+    let minerPriority = 9 - (0.01 + 0.01*(numSources-1)*2)
+    let haulerPriority = minerPriority - 0.01
 
     let thisSource = this.memory.sources[posStr]
 
@@ -721,29 +701,21 @@ Room.prototype.defend = function() {
             }
         }
     }
-
-    // for (let i in this.memory.remoteMines) {
-    //     let needToSpawn = false
-    //     if (this.memory.remoteMines[i]) {
-    //         let exitRooms = Game.rooms[i].describeExits()
-    //         for (let v in exitRooms) {
-    //             if (!Game.rooms[exitRooms[v]].controller || !Game.rooms[exitRooms[v]].controler.my) {
-    //                 needToSpawn = true
-    //                 break
-    //             }
-    //         }
-    //     }
-    //     if (needToSpawn == true) {
-    //         this.addCreep('DEFENSE_MELEE', [['NoRespawn', {}], ['DefenseMelee', {roomName: i}]])
-    //     }
-    // }
-
 }
 
 Room.prototype.fireTowers = function() {
     let hostileCreeps = this.find(FIND_HOSTILE_CREEPS, {filter: s => !s.pos.isOnEdge() && !s.pos.isNearExit()})
     if (hostileCreeps.length == 0) {
-        return
+        let alliedCreeps = this.find(FIND_MY_CREEPS, {filter: s => s.hits < s.hitsMax})
+        if (alliedCreeps.length == 0) {
+            return
+        }
+
+        let towers = this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_TOWER})
+        for (let i in towers) {
+            towers[i].heal(_.first(alliedCreeps))
+        }
+        
     }
 
     let targets = _.sortBy(hostileCreeps, s => s.getHealing())
@@ -757,6 +729,7 @@ Room.prototype.fireTowers = function() {
         towers[i].attack(_.first(hostileCreeps))
     }
 }
+
 
 Room.prototype.updateSourcePathes = function() {
     let storagePos = RoomPosition.serialize(this.storage.pos)
@@ -774,12 +747,12 @@ Room.prototype.updateSourcePathes = function() {
 
 //      //      //      //      //      //      //      //      //      //      //      //
 
-Room.prototype.getBestBody = function(body, cap=this.energyCapacityAvailable) {
+Room.prototype.getBestBody = function(body, cap = this.energyCapacityAvailable) {
     // be wary of starving room of energy
 
-    let filler = _.find(this.memory.Creeps, s => s.role == 'EXTENSIONER' && !_.isUndefined(Game.creeps[s]))
+    let fillers = _.filter(this.memory.Creeps, s => s.role == 'EXTENSIONER' && Game.creeps[s] != undefined)
 
-    if (_.isUndefined(filler)) {
+    if (fillers.length == 0) {
         cap = Math.max(this.energyAvailable, 300)
     }
 
@@ -796,6 +769,8 @@ Room.prototype.getBestBody = function(body, cap=this.energyCapacityAvailable) {
     if (_.last(calcBod) == MOVE && body.length !== 1) {
         calcBod.pop()
     }
+
+    console.log(`Spawned with ${cap}`)
 
     return _.sortBy(calcBod, (v, k) => _.indexOf(BODY_ORDER, v))
 }
@@ -896,7 +871,6 @@ Room.prototype.getStructures = function(newPos, toStore, range = 4) {
 
 Room.prototype.addRoadFromPath = function(pathStr, placeOnLast = false) {
     let path = PathFinder.parse(pathStr)
-    console.log(path)
     for (let i in path) {
         let posObj = RoomPosition.parse(path[i])
         if (posObj.isOnEdge()) {
