@@ -627,6 +627,24 @@ Room.prototype.removeBuildQueue = function(idStr) {
     _.remove(this.memory.buildQueue, idStr)
 }
 
+Room.prototype.checkRoadByPath = function(pathStr) {
+    let path = PathFinder.parse(pathStr)
+
+    for (let i in path) {
+        let posObj = RoomPosition.parse(path[i])
+        if (posObj.isOnEdge()) {
+            continue
+        }
+        
+        let road = _.find(posObj.lookFor(LOOK_STRUCTURES), s => s.structureType == STRUCTURE_ROAD)
+        if (_.isUndefined(road)) {
+            return true
+        }
+    }
+
+    return false
+}
+
 Room.prototype.saturateSource = function(posStr, energyCapacity = 3000, road = false) {
     let numSources = _.keys(this.memory.sources).length
     let minerPriority = 9 - (0.01 + 0.01*(numSources-1)*2)
@@ -654,7 +672,7 @@ Room.prototype.addSource = function(posStr, saturate = true) {
     let serPath = PathFinder.serialize(objPath.path)
     let pathLength = objPath.path.length
         
-    this.memory.sources[posStr] = {path: serPath, pathLength: pathLength, container: RoomPosition.serialize(_.last(objPath.path)), link: '', nextUpdate: Game.time + 100}
+    this.memory.sources[posStr] = {path: serPath, pathLength: pathLength, container: RoomPosition.serialize(_.last(objPath.path)), link: '', road: false}
 
     if (saturate === true) {
         this.saturateSource(posStr)
