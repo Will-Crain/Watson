@@ -29,5 +29,6 @@ class Grid {
 	toString() {
 		return JSON.stringify(this.data)
 	}
-
 }
+
+module.exports = Grid

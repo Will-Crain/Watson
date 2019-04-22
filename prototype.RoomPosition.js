@@ -54,15 +54,8 @@ RoomPosition.prototype.add = function(x, y) {
 }
 
 RoomPosition.serialize = function(posObj) {
-    let xStr = String(posObj.x)
-    let yStr = String(posObj.y)
-    
-    if (posObj.x < 10) {
-        xStr = '0' + xStr
-    }
-    if (posObj.y < 10) {
-        yStr = '0' + yStr
-    }
+    let xStr = posObj.x.addLeadingZeros(2)
+    let yStr = posObj.y.addLeadingZeros(2)
     
     return xStr + yStr + posObj.roomName
 }
@@ -70,7 +63,7 @@ RoomPosition.serialize = function(posObj) {
 RoomPosition.parse = function(posStr) {
     let x = Number(posStr.substring(0, 2))
     let y = Number(posStr.substring(2, 4))
-    let roomN = posStr.substring(4)
+    let roomName = posStr.substring(4)
     
-    return new RoomPosition(x, y, roomN)
+    return new RoomPosition(x, y, roomName)
 }
