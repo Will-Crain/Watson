@@ -13,10 +13,6 @@ RoomObject.prototype.invokeState = function() {
         return false
     }
     
-    // if (this.name && this.name == 'W47N49-9') {
-    //     console.log(`${Game.time}\t${method}`)
-    // }
-    
     this[method](scope)
     return true
 }
