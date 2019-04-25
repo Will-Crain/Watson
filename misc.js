@@ -4,15 +4,15 @@ global.HSL_TO_RGB = function(h, s, l)  {
 			r = g = b = l
 	}
 	else {
-			function hue2rgb(p, q, t) {
+		function hue2rgb(p, q, t) {
 					
-					if (t < 0) t++
-					if (t > 1) t--
-					if (t < 1/6) return p + (q-p) * 6 * t
-					if (t < 1/2) return q
-					if (t < 2/3) return p + (q-p) * (2/3 - t) * 6
-					return p
-			}
+			if (t < 0) t++
+			if (t > 1) t--
+			if (t < 1/6) return p + (q-p) * 6 * t
+			if (t < 1/2) return q
+			if (t < 2/3) return p + (q-p) * (2/3 - t) * 6
+			return p
+		}
 			
 			let q = l < 0.5 ? l * (1 + s) : l + s - l*s
 			let p = 2 * l - q
