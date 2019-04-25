@@ -1,12 +1,25 @@
 'use strict'
 
 Room.prototype.standardRuntime = function() {
+    this.operate()
     this.checkToSpawn()
     this.checkToBuild()
     this.spawnQueue()
     this.buildQueue()
     this.fireTowers()
     this.defend()
+}
+
+Room.prototype.operate = function() {
+
+    // Check for minerals
+    for (let i in this.memory.minerals) {
+        let targetCreep = _.find(this.memory.Creeps, s => s.role == 'MINERAL_MINER' && _.last(s.baseStack)[1].posStr == i)
+        if (_.isUndefined(targetCreep)) {
+            this.addCreep('MINERAL_MINER', [['MineMineral', {posStr: posStr}]])
+            this.addCreep('MINERAL_HAULER', [['Haul', {pickUp: this.memory.minerals[i].container, dropOff: _.first(this.memory.storeTo), dist: this.memory.minerals[i].pathLength}]])
+        }
+    }
 }
 
 Room.prototype.runRCL1 = function(scope) {
@@ -714,6 +727,42 @@ Room.prototype.addSource = function(posStr = this.getTake(RESOURCE_ENERGY), satu
 }
 Room.prototype.removeSource = function(posStr) {
     this.memory.Sources[posStr] = undefined
+}
+
+Room.prototype.addMineral = function(posStr) {
+    if (_.isUndefined(this.memory.minerals)) {
+        // Memory doesn't exist yet
+        this.memory.minerals = {}
+    }
+
+    let posObj = RoomPosition.parse(posStr)
+    if (_.isUndefined(Game.rooms[posObj.roomName])) {
+        // No vision
+        return false
+    }
+
+    let extractor = _.find(posObj.lookFor(LOOK_STRUCTURES), s => s.structureType == STRUCTURE_EXTRACTOR)
+    if (_.isUndefined(extractor)) {
+        // No extractor
+        this.addStructure(posStr, STRUCTURE_EXTRACTOR)
+    }
+
+    let mineralObj = _.first(posObj.lookFor(LOOK_MINERALS))
+    if (!mineralObj) {
+        // No mineral
+        return false
+    }
+
+    let dropOffSpot = RoomPosition.parse(_.first(this.memory.takeFrom))
+    let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 5, plainCost: 2, swampCost: 5})
+
+    let serPath = PathFinder.serialize(objPath.path)
+    let pathLength = objPath.path.length
+
+    let active = mineralObj.mineralAmount > 0
+    this.memory.minerals[posStr] = {active: active, ticks: mineralObj.ticksToRegeneration, path: serPath, pathLength: pathLength, container: RoomPosition.serialize(_.last(objPath.path)) }
+
+    this.addRoadFromPath(serPath)
 }
 
 //      //      //      //      //      //      //      //      //      //      //      //
