@@ -14,7 +14,7 @@ Room.prototype.operate = function() {
 
     // Check for minerals
     for (let i in this.memory.minerals) {
-        let targetCreep = _.find(this.memory.Creeps, s => s.role == 'MINERAL_MINER' && _.last(s.baseStack)[1].posStr == i)
+        let targetCreep = _.find(this.memory.Creeps, s => s.role == 'MINERAL_MINER' && _.last(s.baseStack)[1].minePosStr == i)
         if (_.isUndefined(targetCreep)) {
             this.addCreep('MINERAL_MINER', [['MineMineral', {standPosStr: this.memory.minerals[i].container, minePosStr: i}]])
             this.addCreep('MINERAL_HAULER', [['Haul', {pickUp: this.memory.minerals[i].container, dropOff: _.first(this.memory.storeTo), dist: this.memory.minerals[i].pathLength}]])
