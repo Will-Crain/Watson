@@ -351,6 +351,54 @@ Creep.prototype.runHarvest = function(scope) {
 Creep.prototype.runMineMineral = function(scope) {
     let {} = scope
 }
+Creep.prototype.runMineMineral = function(scope) {
+    let {standPosStr, minePosStr} = scope
+    let standPos = RoomPosition.parse(standPosStr)
+    let roomName = standPos.roomName
+
+    if (this.room.name !== roomName) {
+        let route = Game.map.findRoute(this.room, roomName, {routeCallback(rName, frName) {
+            if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'SOURCE_KEEPER') {
+                return 50
+            }
+            else {
+                return 1
+            }
+        }})
+        let nextRoom = _.first(route).room
+        let roomPos = new RoomPosition(24, 24, nextRoom)
+
+        this.pushState('MoveTo', {posStr: RoomPosition.serialize(roomPos), exitOnRoom: true})
+    }
+    else {
+        if (this.pos.inRangeTo(standPos, 0)) {
+            this.pushState('MoveTo', {range: 0})
+        }
+        else {
+            let mineObj = RoomPosition.parse(minePosStr).look(LOOK_MINERALS)[0]
+            if (mineObj.mineralAmount == 0) {
+                this.pushState('NoRespawn', {})
+                Game.rooms[this.memory.homeRoom].memory.minerals[minePosStr].active = false
+                Game.rooms[this.memory.homeRoom].memory.minerals[minePosStr].ticks = mineObj.ticksToRegeneration
+            }
+            else {
+                let container = _.find(standPos.look(LOOK_STRUCTURES), s => s.structureType == STRUCTURE_CONTAINER)
+                if (_.isUndefined(container)) {
+                    // cry
+                }
+                else {
+                    if (_.sum(container.store) >= container.storeCapacity) {
+                        // cry
+                    }
+                    else {
+                        this.mine(mineObj)
+                    }
+                }
+            }
+        }
+    }
+
+}
 Creep.prototype.runMine = function(scope) {
     let {standPosStr, minePosStr} = scope
     let standPosObj = RoomPosition.parse(standPosStr)

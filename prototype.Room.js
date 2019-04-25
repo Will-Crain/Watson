@@ -16,7 +16,7 @@ Room.prototype.operate = function() {
     for (let i in this.memory.minerals) {
         let targetCreep = _.find(this.memory.Creeps, s => s.role == 'MINERAL_MINER' && _.last(s.baseStack)[1].posStr == i)
         if (_.isUndefined(targetCreep)) {
-            this.addCreep('MINERAL_MINER', [['MineMineral', {posStr: posStr}]])
+            this.addCreep('MINERAL_MINER', [['MineMineral', {standPosStr: this.memory.minerals[i].container, minePosStr: i}]])
             this.addCreep('MINERAL_HAULER', [['Haul', {pickUp: this.memory.minerals[i].container, dropOff: _.first(this.memory.storeTo), dist: this.memory.minerals[i].pathLength}]])
         }
     }
@@ -758,11 +758,13 @@ Room.prototype.addMineral = function(posStr) {
 
     let serPath = PathFinder.serialize(objPath.path)
     let pathLength = objPath.path.length
+    let lastPos = _.last(objPath.path)
 
     let active = mineralObj.mineralAmount > 0
-    this.memory.minerals[posStr] = {active: active, ticks: mineralObj.ticksToRegeneration, path: serPath, pathLength: pathLength, container: RoomPosition.serialize(_.last(objPath.path)) }
+    this.memory.minerals[posStr] = {active: active, ticks: mineralObj.ticksToRegeneration, path: serPath, pathLength: pathLength, container: RoomPosition.serialize(lastPos)}
 
     this.addRoadFromPath(serPath)
+    this.addStructure(RoomPosition.serialize(lastPos), STRUCTURE_CONTAINER)
 }
 
 //      //      //      //      //      //      //      //      //      //      //      //
