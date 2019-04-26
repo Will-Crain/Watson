@@ -591,7 +591,7 @@ Creep.prototype.runPickUp = function(scope) {
             }
             else {
                 let posStruct = _.first(posObj.lookFor(LOOK_STRUCTURES))
-                if (_.isUndefined(posStruct)) {
+                if (_.isUndefined(posStruct) || _.isNull(posStruct)) {
                     let resObj = _.find(posObj.lookFor(LOOK_RESOURCES), s => s.resourceType == res)
                     if (_.isUndefined(resObj)) {
                         let creepObj = _.find(posObj.lookFor(LOOK_CREEPS), s => s.my && s.carry.energy > 0)
@@ -613,7 +613,9 @@ Creep.prototype.runPickUp = function(scope) {
                     }
                 }
                 else {
-                    let state = this.withdraw(posStruct, res, Math.min(amt, posStruct.store[res]))
+                    let st = ['container', 'storage', 'terminal']
+                    let inStore = st.includes(posStruct.structureType) ? posStruct.store[res] : posStruct.energy
+                    let state = this.withdraw(posStruct, res, Math.min(amt, inStore))
                     if (state == 0 || _.sum(this.carry) == this.carryCapacity || state == -6) {
                         this.popState()
                     }
