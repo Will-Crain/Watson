@@ -14,10 +14,20 @@ Room.prototype.operate = function() {
 
     // Check for minerals
     for (let i in this.memory.minerals) {
-        let targetCreep = _.find(this.memory.Creeps, s => s.role == 'MINERAL_MINER' && _.last(s.baseStack)[1].minePosStr == i)
-        if (_.isUndefined(targetCreep)) {
-            // this.addCreep('MINERAL_MINER', [['MineMineral', {standPosStr: this.memory.minerals[i].container, minePosStr: i}]])
-            // this.addCreep('MINERAL_HAULER', [['Haul', {res: mineralObj.mineralType, pickUp: this.memory.minerals[i].container, dropOff: _.first(this.memory.storeTo), dist: this.memory.minerals[i].pathLength}]])
+        let mineralPos = RoomPosition.parse(i)
+        let mineralObj = mineralPos.lookFor(LOOK_MINERALS)[0]
+
+        if (_.isUndefined(mineralObj)) {
+            return
+        }
+
+        let targetMiner = _.find(this.memory.Creeps, s => s.role == 'MINERAL_MINER' && _.last(s.baseStack)[1].minePosStr == i)
+        let targetHauler = _.find(this.memory.Creeps, s => s.role == 'MINERAL_HAULER' && _.last(s.baseStack)[1].pickUp == this.memory.minerals[i].container)
+        if (_.isUndefined(targetMiner)) {
+            this.addCreep('MINERAL_MINER', [['MineMineral', {standPosStr: this.memory.minerals[i].container, minePosStr: i}]])
+        }
+        if (_.isUndefined(targetHauler)) {
+            this.addCreep('MINERAL_HAULER', [['Haul', {res: mineralObj.mineralType, pickUp: this.memory.minerals[i].container, dropOff: _.first(this.memory.storeTo), dist: this.memory.minerals[i].pathLength}]])
         }
     }
 }
@@ -35,35 +45,11 @@ Room.prototype.runRCL1 = function(scope) {
     // Initial setup
     if (this.memory.conLevel < this.controller.level && this.controller.level == 1) {
         
-        let spawn = _.first(this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_SPAWN}))
-
-        if (spawn == undefined) {
-            return
-        }
-        
-        // if (this.memory.Bunker == '') {
-        //     let bunkerPos = spawn.pos.add(0, -2)
-        //     this.memory.Bunker = RoomPosition.serialize(bunkerPos)
-        // }
-            
-        // this.addFromBlueprint(this.memory.Bunker, Memory.Blueprints.Bunker, this.controller.level)
-        
-        
         this.memory.eventFlags = {}
         this.memory.eventFlags[1] = {}
         this.memory.eventFlags[1]['01CONTAINER'] = false
-        
-        
-        // let spawnPos = this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_SPAWN})[0].pos
-        // let controllerPos = this.controller.pos
-        
-        // let fromSpawnToController = spawnPos.findPathTo(controllerPos, {ignoreRoads: true, maxRooms: 1, ignoreCreeps: true, ignoreDestructibleStructures: true})
-        
-        // let {x, y} = (fromSpawnToController.reverse())[4]
-        // let containerPos = new RoomPosition(x, y, this.name)
-        
-        // this.addStructure(RoomPosition.serialize(containerPos), STRUCTURE_CONTAINER, 5)
-        
+
+
         let sources = this.find(FIND_SOURCES)
 
         for (let i in sources) {
@@ -80,6 +66,7 @@ Room.prototype.runRCL1 = function(scope) {
             }
         }
         
+        console.log(this.memory.conLevel, this.controller.level)
         this.memory.conLevel = this.controller.level
     }
     
@@ -125,6 +112,7 @@ Room.prototype.runRCL2 = function(scope) {
     
     // Extensions are completed
     if (this.memory.eventFlags[2]['01EXTENSIONS'] == false) {
+        console.log('still false?')
         if (this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_EXTENSION}).length == CONTROLLER_STRUCTURES['extension'][this.controller.level]) {
             
             let adjRooms = Game.map.describeExits(this.name)
@@ -148,7 +136,7 @@ Room.prototype.runRCL2 = function(scope) {
                 let standPosStr = this.memory.sources[i].container
                 let minePosStr = i
                 this.addCreep('ENERGY_MINER', [['Mine', {standPosStr: standPosStr, minePosStr: minePosStr}]], 3)
-                this.addCreep('HAULER', [['Haul', {pickUp: standPosStr, dist: this.memory.soruces[i].pathLength, dropOff: _.first(this.memory.storeTo)}]], 5, false, this.getHaulerBody(this.memory.sources[i].pathLength))
+                this.addCreep('HAULER', [['Haul', {pickUp: standPosStr, dist: this.memory.sources[i].pathLength, dropOff: _.first(this.memory.storeTo)}]], 5, false, this.getHaulerBody(this.memory.sources[i].pathLength))
             }
 
             this.memory.eventFlags[2]['01EXTENSIONS'] = true
@@ -447,7 +435,7 @@ Room.prototype.setup = function() {
     this.memory.sources = {}
     this.memory.Creeps = {}
     this.memory.creepCount = 0
-    this.memory.stack = [[`RCL${this.controller.level}`, {}]]
+    this.memory.stack = [[`RCL1`, {}]]
     this.memory.queue = []
     this.memory.conLevel = 0
     this.memory.Bunker = ''
@@ -568,13 +556,10 @@ Room.prototype.removeFromQueue = function(cName) {
     _.remove(this.memory.queue, s => s == cName)
 }
 Room.prototype.checkToBuild = function() {
-    let sumRepair = 0
-    let targetRooms = []
-
     this.memory.constructionSites = 0
 
     for (let i in this.memory.structures) {
-        if (this.memory.structures[i].RCL && this.memory.structures[i].RCL > this.controller.level) {
+        if (!_.isUndefined(this.memory.structures[i].RCL) && this.memory.structures[i].RCL > this.controller.level) {
             continue
         }
 
@@ -598,6 +583,9 @@ Room.prototype.checkToBuild = function() {
                     if (_.isUndefined(constructionTest)) {
                         // No structure exists, no construction site for it exists
                         this.addBuildQueue(this.memory.structures[i].posStr, this.memory.structures[i].structureType, this.memory.structures[i].priority)
+                        if (this.name == 'W48N46') {
+                            console.log(this.memory.structures[i].structureType)
+                        }
                     }
                     else {
                         // No structure exists, but there is a construction site
@@ -693,6 +681,7 @@ Room.prototype.checkRoadByPath = function(pathStr) {
 }
 
 Room.prototype.saturateSource = function(posStr, energyCapacity = 3000, road = false) {
+    console.log(`${this.name} did the thing`)
     let numSources = _.keys(this.memory.sources).length
     let minerPriority = 9 - (0.01 + 0.01*(numSources-1)*2)
     let haulerPriority = minerPriority - 0.01
@@ -703,7 +692,7 @@ Room.prototype.saturateSource = function(posStr, energyCapacity = 3000, road = f
     this.addCreep('HAULER', [['Haul', {pickUp: thisSource.container, dist: thisSource.pathLength, dropOff: _.first(this.memory.storeTo)}]], haulerPriority, false, this.getHaulerBody(thisSource.pathLength, energyCapacity, road))
 }
 
-Room.prototype.addSource = function(posStr = this.getTake(RESOURCE_ENERGY), saturate = true) {
+Room.prototype.addSource = function(posStr, saturate = true, path = false) {
     let posObj = RoomPosition.parse(posStr)
     let obj = _.first(posObj.lookFor(LOOK_SOURCES))
     
@@ -712,14 +701,16 @@ Room.prototype.addSource = function(posStr = this.getTake(RESOURCE_ENERGY), satu
         // Request vision?
     }
     
-    let dropOffSpot = RoomPosition.parse(_.first(this.memory.takeFrom))
-    let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 5, plainCost: 2, swampCost: 5})
-    objPath.path.pop()
+    if (path == false) {
+        let dropOffSpot = RoomPosition.parse(_.first(this.memory.takeFrom))
+        let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 5, plainCost: 2, swampCost: 5})
 
-    let serPath = PathFinder.serialize(objPath.path)
-    let pathLength = objPath.path.length
+        let serPath = PathFinder.serialize(objPath.path)
+        let pathLength = objPath.path.length
+        this.memory.sources[posStr] = {path: serPath, pathLength: pathLength, container: RoomPosition.serialize(_.last(objPath.path)), link: '', road: false}
+    }
+
         
-    this.memory.sources[posStr] = {path: serPath, pathLength: pathLength, container: RoomPosition.serialize(_.last(objPath.path)), link: '', road: false}
 
     if (saturate === true) {
         this.saturateSource(posStr)
