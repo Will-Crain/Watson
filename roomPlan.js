@@ -59,25 +59,22 @@ Room.prototype.populateMatrix = function() {
         Memory.RoomCache = {}
     }
 
-    let cachedGrid = Memory.RoomCache[this.name]
-    let grid
-
-    grid = this.generateMatrix()
-
-    let bunker = this.memory.Bunker || this.placeBunker()
+    let bunker = this.placeBunker()
 
     if (bunker == false) {
         return false
     }
 
+    let grid = this.generateMatrix()
     this.memory.structures = {}
+    this.memory.buildQueue = []
 
     let posObj = RoomPosition.parse(bunker)
     let rName = this.name
 
     let pathTo = {
         2:  [this.controller.pos],
-        1: [..._.map(this.find(FIND_SOURCES), s => s.pos), ..._.map(this.find(FIND_MINERALS), s => s.pos)]
+        1: [..._.map(this.find(FIND_SOURCES), s => s.pos)]
     }
     
     for (let i in Memory.Blueprints.Bunker) {
@@ -107,11 +104,9 @@ Room.prototype.populateMatrix = function() {
             let path = PathFinder.search(posObj, {pos: pathTo[i][v], range: 1}, {plainCost: 2, swampCost: 5, 
                 roomCallback: function(roomName) {
                     if (roomName == rName) {
-                        console.log(grid.get(26, 36))
                         return grid
                     }
                     else {
-                        console.log(`${roomName} added to the fray`)
                         return Game.rooms[roomName].generateMatrix()
                     }
                 }
@@ -157,9 +152,11 @@ Room.prototype.populateMatrix = function() {
         }
     }
 
+    console.log('why here?')
+
     Memory.RoomCache[this.name] = {data: grid.outData(), structures: grid.outStructures(), priority: grid.outPriority(), RCL: grid.outRCL()}
     grid.addStructures(this.name)
-    return grid
+    return bunker
 }
 
 Room.prototype.placeBunker = function(size = 7) {
@@ -216,7 +213,7 @@ Room.prototype.placeBunker = function(size = 7) {
         return false
     }
 
-    let targetPos = _.min(spots, s => s.getRangeTo(this.controller.pos))
+    let targetPos = _.min(spots, s => s.add(-7, 7).getRangeTo(this.controller.pos))
     let bunkerPos = targetPos.add(-7, -7)
     this.memory.Bunker = RoomPosition.serialize(bunkerPos)
 
