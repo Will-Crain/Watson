@@ -1,93 +1,76 @@
-class RoomGrid {
-	constructor(data = {}, structures = {}, priority = {}, RCL = {}) {
-		this.width = 50
-		this.height = 50
+	class RoomGrid extends PathFinder.CostMatrix {
+		constructor(data = {}, structures = {}, priority = {}, RCL= {}) {
+			super([])
+			this.width = 50
+			this.height = 50
 
-		this.data = data
-		this.structures = structures
-		this.priority = priority
-		this.RCL = RCL
-	}
+			this._bits = new Uint8Array(new Uint32Array(data).buffer)
 
-	set(x, y, val) {
-		if (x > this.width-1 || y > this.height-1 || x < 0 || y < 0) {
-			throw new RangeError('Out of bounds')
+			this.structures = structures
+			this.priority = priority
+			this.RCL = RCL
 		}
+			
+		setStructure(x, y, val) {
+			if (x > this.width-1 || y > this.height-1 || x < 0 || y < 0) {
+				throw new RangeError('Out of bounds')
+			}
 
-		let pIndex = Number(this.width*y) + Number(x)
+			let pIndex = Number(this.height*x) + Number(y)
 
-		this.data[pIndex] = val
-		return this
-	}
-    
-	setStructure(x, y, val) {
-		if (x > this.width-1 || y > this.height-1 || x < 0 || y < 0) {
-			throw new RangeError('Out of bounds')
+			this.structures[pIndex] = val
+			return this
 		}
+			
+		setPriority(x, y, val) {
+			if (x > this.width-1 || y > this.height-1 || x < 0 || y < 0) {
+				throw new RangeError('Out of bounds')
+			}
 
-		let pIndex = Number(this.width*y) + Number(x)
+			let pIndex = Number(this.height*x) + Number(y)
 
-		this.structures[pIndex] = val
-		return this
-	}
+			this.priority[pIndex] = val
+			return this
+		}
 		
-	setPriority(x, y, val) {
-		if (x > this.width-1 || y > this.height-1 || x < 0 || y < 0) {
-			throw new RangeError('Out of bounds')
+		setRCL(x, y, val) {
+			if (x > this.width-1 || y > this.height-1 || x < 0 || y < 0) {
+				throw new RangeError('Out of bounds')
+			}
+
+			let pIndex = Number(this.height*x) + Number(y)
+
+			this.RCL[pIndex] = val
+			return this
 		}
 
-		let pIndex = Number(this.width*y) + Number(x)
+		addStructures(roomName) {
+			for (let i in this.structures) {
+				let x = Math.floor(i/50)
+				let y = Number(i)-Number(x*50)
 
-		this.priority[pIndex] = val
-		return this
-	}
-	
-	setRCL(x, y, val) {
-		if (x > this.width-1 || y > this.height-1 || x < 0 || y < 0) {
-			throw new RangeError('Out of bounds')
+				let newPos = new RoomPosition(x, y, roomName)
+				let posStr = RoomPosition.serialize(newPos)
+
+				Game.rooms[roomName].addStructure(posStr, this.structures[i], this.RCL[i], this.priority[i])
+			}
 		}
 
-		let pIndex = Number(this.width*y) + Number(x)
+		outData() {
+			return JSON.stringify(this._bits)
+		}
 
-		this.RCL[pIndex] = val
-		return this
-	}
+		outStructures() {
+			return JSON.stringify(this.structures)
+		}
 
-	addStructures(roomName) {
-		for (let i in this.structures) {
-			console.log(i)
-			let y = Math.floor(i/50)
-			let x = Number(i)-Number(y*50)
+		outPriority() {
+			return JSON.stringify(this.priority)
+		}
 
-			console.log(x, y, this.structures[i])
-
-			let newPos = new RoomPosition(x, y, roomName)
-			let posStr = RoomPosition.serialize(newPos)
-
-			Game.rooms[roomName].addStructure(posStr, this.structures[i], this.RCL[i], this.priority[i])
+		outRCL() {
+			return JSON.stringify(this.RCL)
 		}
 	}
 
-	get(x, y) {
-		let pIndex = Number(this.width*y) + Number(x)
-		return this.data[pIndex]
-	}
-
-	outData() {
-		return JSON.stringify(this.data)
-	}
-
-	outStructures() {
-		return JSON.stringify(this.structures)
-	}
-
-	outPriority() {
-		return JSON.stringify(this.priority)
-	}
-
-	outRCL() {
-		return JSON.stringify(this.RCL)
-	}
-}
-
-module.exports = RoomGrid
+	module.exports = RoomGrid

@@ -16,8 +16,8 @@ Room.prototype.operate = function() {
     for (let i in this.memory.minerals) {
         let targetCreep = _.find(this.memory.Creeps, s => s.role == 'MINERAL_MINER' && _.last(s.baseStack)[1].minePosStr == i)
         if (_.isUndefined(targetCreep)) {
-            this.addCreep('MINERAL_MINER', [['MineMineral', {standPosStr: this.memory.minerals[i].container, minePosStr: i}]])
-            this.addCreep('MINERAL_HAULER', [['Haul', {pickUp: this.memory.minerals[i].container, dropOff: _.first(this.memory.storeTo), dist: this.memory.minerals[i].pathLength}]])
+            // this.addCreep('MINERAL_MINER', [['MineMineral', {standPosStr: this.memory.minerals[i].container, minePosStr: i}]])
+            // this.addCreep('MINERAL_HAULER', [['Haul', {res: mineralObj.mineralType, pickUp: this.memory.minerals[i].container, dropOff: _.first(this.memory.storeTo), dist: this.memory.minerals[i].pathLength}]])
         }
     }
 }
@@ -384,7 +384,7 @@ Room.prototype.getTake = function(resourceType = RESOURCE_ENERGY) {
     else {
         for (let i in this.memory.takeFrom) {
             let posObj = RoomPosition.parse(this.memory.takeFrom[i])
-            let obj = posObj.lookFor(LOOK_STRUCTURE)[0]
+            let obj = posObj.lookFor(LOOK_STRUCTURES)[0]
             
             if (_.isUndefined(obj)) {
                 continue
@@ -423,13 +423,13 @@ Room.prototype.getStore = function(resourceType = RESOURCE_ENERGY) {
     else {
         for (let i in this.memory.storeTo) {
             let posObj = RoomPosition.parse(this.memory.storeTo[i])
-            let obj = posObj.lookFor(LOOK_STRUCTURE)[0]
+            let obj = posObj.lookFor(LOOK_STRUCTURES)[0]
             
             if (_.isUndefined(obj)) {
                 continue
             }
 
-            if (obj.carry == undefined) {
+            if (obj.store == undefined) {
                 return false
             }
             
@@ -502,7 +502,7 @@ Room.prototype.spawnQueue = function() {
         }
     }
 
-    let toSpawn = _.sortBy(this.memory.queue, s => PRIORITY_BY_ROLE[this.memory.Creeps[s].role] || this.memory.Creeps[s].priority).reverse()
+    let toSpawn = _.sortBy(this.memory.queue, s => PRIORITY_BY_ROLE[this.memory.Creeps[s].role] || this.memory.Creeps[s].priority)
     for (let i in useableSpawns) {
         if (i > toSpawn.length+1) {
             return true

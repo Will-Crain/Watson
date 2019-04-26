@@ -347,10 +347,6 @@ Creep.prototype.runHarvest = function(scope) {
         }
     }
 }
-
-Creep.prototype.runMineMineral = function(scope) {
-    let {} = scope
-}
 Creep.prototype.runMineMineral = function(scope) {
     let {standPosStr, minePosStr} = scope
     let standPos = RoomPosition.parse(standPosStr)
@@ -371,18 +367,24 @@ Creep.prototype.runMineMineral = function(scope) {
         this.pushState('MoveTo', {posStr: RoomPosition.serialize(roomPos), exitOnRoom: true})
     }
     else {
-        if (this.pos.inRangeTo(standPos, 0)) {
-            this.pushState('MoveTo', {range: 0})
+        if (!this.pos.inRangeTo(standPos, 0)) {
+            this.pushState('MoveTo', {posStr: standPosStr, range: 0})
         }
         else {
-            let mineObj = RoomPosition.parse(minePosStr).look(LOOK_MINERALS)[0]
+            let mineObj = RoomPosition.parse(minePosStr).lookFor(LOOK_MINERALS)[0]
+            let extractor = _.find(RoomPosition.parse(minePosStr).lookFor(LOOK_STRUCTURES), s => s.structureType == STRUCTURE_EXTRACTOR)
             if (mineObj.mineralAmount == 0) {
                 this.pushState('NoRespawn', {})
                 Game.rooms[this.memory.homeRoom].memory.minerals[minePosStr].active = false
                 Game.rooms[this.memory.homeRoom].memory.minerals[minePosStr].ticks = mineObj.ticksToRegeneration
             }
+
+            if (extractor.cooldown > 0) {
+                return
+            }
+
             else {
-                let container = _.find(standPos.look(LOOK_STRUCTURES), s => s.structureType == STRUCTURE_CONTAINER)
+                let container = _.find(standPos.lookFor(LOOK_STRUCTURES), s => s.structureType == STRUCTURE_CONTAINER)
                 if (_.isUndefined(container)) {
                     // cry
                 }
@@ -391,7 +393,7 @@ Creep.prototype.runMineMineral = function(scope) {
                         // cry
                     }
                     else {
-                        this.mine(mineObj)
+                        this.harvest(mineObj)
                     }
                 }
             }
@@ -449,7 +451,7 @@ Creep.prototype.runMine = function(scope) {
     }
 }
 Creep.prototype.runHaul = function(scope) {
-    let {pickUp, dropOff, dist = 20} = scope
+    let {pickUp, dropOff, dist = 20, res = RESOURCE_ENERGY} = scope
 
     let homeRoom = Game.rooms[this.memory.homeRoom]
     if (this.ticksToLive < dist*2+10) {
@@ -458,13 +460,13 @@ Creep.prototype.runHaul = function(scope) {
     }
     else {
         if (_.sum(this.carry) == 0) {
-            this.pushState('PickUp', {posStr: pickUp})
+            this.pushState('PickUp', {posStr: pickUp, res: res})
         }
             
         else {
-            let getStore = homeRoom.getStore()
+            let getStore = homeRoom.getStore(res)
             if (getStore !== false) {
-                this.pushState('DropOff', {posStr: homeRoom.getStore()})
+                this.pushState('DropOff', {posStr: getStore})
             }
             else {
                 this.pushState('Wait', {until: Game.time + 3})
@@ -753,18 +755,29 @@ Creep.prototype.runBootstrap = function(scope) {
         else {
             // Is spawn built?
             let conSites = this.room.find(FIND_MY_CONSTRUCTION_SITES)
-            let targetSite = _.max(conSites, s => Game.rooms[roomName].memory.structures[`${RoomPosition.serialize(s.pos)}${s.structureType}`].priority || PRIORITY_BY_STRUCTURE[s.structureType])
-            if (_.isNull(Game.getObjectById(spawnObj.id))) {
-                this.pushState('Build', {posStr: spawnObj.pos})
+            let targetSite = _.max(conSites, function(s) {
+                let priority
+                let index = `${RoomPosition.serialize(s.pos)}${s.structureType}`
+                if (!_.isUndefined(Game.rooms[roomName].memory.structures[index].priority)) {
+                    priority = Game.rooms[roomName].memory.structures[index].priority
+                }
+                else {
+                    priority = PRIORITY_BY_STRUCTURE[s.structureType]
+                }
+                return priority
+            })
+            if (!_.isUndefined(targetSite)) {
+                this.pushState('Build', {posStr: RoomPosition.serialize(targetSite.pos)})
             }
             else {
+                let spawnObj = this.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_SPAWN})
                 if (this.room.controller.level > 2) {
                     this.pushState('Upgrade', {cont: true})
                     this.pushState('NoRespawn', {})
                 }
                 else {
                     if (this.ticksToLive > 100) {
-                        this.pushState('Renew', {posStr: spawnObj.pos, minTicks: 800})
+                        this.pushState('Renew', {posStr: RoomPosition.serialize(spawnObj.pos), minTicks: 800})
                     }
                     else {
                         this.pushState('Upgrade', {cont: false})
@@ -780,8 +793,11 @@ Creep.prototype.runClaim = function(scope) {
     let {roomName} = scope
     if (this.room.name !== roomName) {
         let route = Game.map.findRoute(this.room, roomName, {routeCallback(rName, frName) {
-            if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'SOURCE_KEEPER') {
+            if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'CENTER') {
                 return 50
+            }
+            else if (Room.describe(rName) == 'HIGHWAY') {
+                return 3
             }
             else {
                 return 1
