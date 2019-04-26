@@ -62,19 +62,15 @@ Room.prototype.populateMatrix = function() {
     let cachedGrid = Memory.RoomCache[this.name]
     let grid
 
-    if (_.isUndefined(cachedGrid)) {
-        grid = this.generateMatrix()
-    }
-    else {
-        grid = new RoomGrid(JSON.parse(cachedGrid.data))
-    }
+    grid = this.generateMatrix()
 
-    let terrain = this.getTerrain()
     let bunker = this.memory.Bunker || this.placeBunker()
 
     if (bunker == false) {
         return false
     }
+
+    this.memory.structures = {}
 
     let posObj = RoomPosition.parse(bunker)
     let rName = this.name
@@ -96,7 +92,12 @@ Room.prototype.populateMatrix = function() {
                 grid.set(posObj.x+dx, posObj.y+dy, 1)
             }
             else {
-                grid.set(posObj.x+dx, posObj.y+dy, 255)
+                if (dx == -3 && dy == -3) {
+                    grid.set(posObj.x+dx, posObj.y+dy, 255)
+                }
+                else {
+                    grid.set(posObj.x+dx, posObj.y+dy, 255)
+                }
             }
         }
     }
@@ -106,12 +107,11 @@ Room.prototype.populateMatrix = function() {
             let path = PathFinder.search(posObj, {pos: pathTo[i][v], range: 1}, {plainCost: 2, swampCost: 5, 
                 roomCallback: function(roomName) {
                     if (roomName == rName) {
+                        console.log(grid.get(26, 36))
                         return grid
                     }
-                    else if (!_.isUndefiend(Memory.RoomCache[roomName])) {
-                        return new RoomGrid(JSON.parse(Memory.RoomCache[roomName].data))
-                    }
                     else {
+                        console.log(`${roomName} added to the fray`)
                         return Game.rooms[roomName].generateMatrix()
                     }
                 }
@@ -166,7 +166,7 @@ Room.prototype.placeBunker = function(size = 7) {
 
     let terrain = this.getTerrain()
 
-    let grid = new Grid(50, 50)
+    let grid = new Grid()
     let toAvoid = {
         1: [..._.map(this.find(FIND_SOURCES), s => s.pos), ..._.map(this.find(FIND_MINERALS), s => s.pos)],
         2: [this.controller.pos]
@@ -216,11 +216,11 @@ Room.prototype.placeBunker = function(size = 7) {
         return false
     }
 
-    let targetPos = _.min(spots, s => s.add(-7, -7).getRangeTo(this.controller.pos))
+    let targetPos = _.min(spots, s => s.getRangeTo(this.controller.pos))
     let bunkerPos = targetPos.add(-7, -7)
     this.memory.Bunker = RoomPosition.serialize(bunkerPos)
 
-    Memory.toDisplay = grid.toString()
+    Memory.toDisplay = grid.data
     return RoomPosition.serialize(bunkerPos)
 }
 
