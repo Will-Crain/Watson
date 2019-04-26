@@ -1,14 +1,12 @@
 	class RoomGrid extends PathFinder.CostMatrix {
-		constructor(data = {}, structures = {}, priority = {}, RCL= {}) {
+		constructor() {
 			super([])
 			this.width = 50
 			this.height = 50
 
-			this._bits = new Uint8Array(new Uint32Array(data).buffer)
-
-			this.structures = structures
-			this.priority = priority
-			this.RCL = RCL
+			this.structures = {}
+			this.priority = {}
+			this.RCL = {}
 		}
 			
 		setStructure(x, y, val) {
