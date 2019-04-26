@@ -13,22 +13,34 @@ module.exports.loop = function() {
         if (_.isUndefined(Game.rooms[i].controller) || !Game.rooms[i].controller.my) {
             continue
         }
-
-        if (Game.rooms[i].memory.conLevel == 0) {
+        
+        // for (let v in Game.rooms[i].memory.Creeps) {
+        //     if (Game.rooms[i].memory.Creeps[v]) {
+        //         if (Game.rooms[i].memory.Creeps[v].role == 'MINERAL_HAULER' || Game.rooms[i].memory.Creeps[v].role == 'MINERAL_MINER') {
+        //             Game.rooms[i].memory.Creeps[v] = undefined
+        //         }
+        //     }
+        // }
+        
+        if (_.isUndefined(Game.rooms[i].memory.conLevel)) {
             Game.rooms[i].setup()
         }
-        else {
+        
+        try {
             Game.rooms[i].invokeState()
+        }
+        catch (e) {
+            console.log(`${e.name}\n${e.message}\n${e.stack}`)
         }
         
         if (Game.rooms[i].memory.conLevel !== undefined) {
             RoomVisual.showRoom(Game.rooms[i])
         }
-        if (Game.rooms[i].memory.roomGrid) {
-            RoomVisual.drawRoomGrid(Game.rooms[i].memory.roomGrid, i)
+        if (Memory.RoomCache[i] && Memory.RoomCache[i].structures) {
+            // RoomVisual.drawRoomGrid(Memory.RoomCache[i].structures, i)
         }
         if (!_.isUndefined(Memory.toDisplay)) {
-            RoomVisual.drawGrid(Memory.toDisplay, 'sim')
+            // RoomVisual.drawGrid(Memory.toDisplay.data, i)
         }
     }
     
