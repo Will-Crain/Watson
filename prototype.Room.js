@@ -66,7 +66,6 @@ Room.prototype.runRCL1 = function(scope) {
             }
         }
         
-        console.log(this.memory.conLevel, this.controller.level)
         this.memory.conLevel = this.controller.level
     }
     
@@ -112,7 +111,6 @@ Room.prototype.runRCL2 = function(scope) {
     
     // Extensions are completed
     if (this.memory.eventFlags[2]['01EXTENSIONS'] == false) {
-        console.log('still false?')
         if (this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_EXTENSION}).length == CONTROLLER_STRUCTURES['extension'][this.controller.level]) {
             
             let adjRooms = Game.map.describeExits(this.name)
@@ -584,7 +582,6 @@ Room.prototype.checkToBuild = function() {
                         // No structure exists, no construction site for it exists
                         this.addBuildQueue(this.memory.structures[i].posStr, this.memory.structures[i].structureType, this.memory.structures[i].priority)
                         if (this.name == 'W48N46') {
-                            console.log(this.memory.structures[i].structureType)
                         }
                     }
                     else {

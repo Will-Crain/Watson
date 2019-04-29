@@ -930,7 +930,7 @@ Creep.prototype.runReserve = function(scope) {
     }
     else {
         if (this.pos.inRangeTo(this.room.controller, 1)) {
-            if (this.room.controller.sign.text !== message) {
+            if (_.isUndefined(this.room.controller.sign) || this.room.controller.sign.text !== message) {
                 this.signController(this.room.controller, message)
             }
             else {
