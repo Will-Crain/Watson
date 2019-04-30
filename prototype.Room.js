@@ -20,6 +20,9 @@ Room.prototype.operate = function() {
         if (_.isUndefined(mineralObj)) {
             return
         }
+        if (mineralObj.mineralAmount > 0) {
+            return
+        }
 
         let targetMiner = _.find(this.memory.Creeps, s => s.role == 'MINERAL_MINER' && _.last(s.baseStack)[1].minePosStr == i)
         let targetHauler = _.find(this.memory.Creeps, s => s.role == 'MINERAL_HAULER' && _.last(s.baseStack)[1].pickUp == this.memory.minerals[i].container)
@@ -512,7 +515,7 @@ Room.prototype.spawnQueue = function() {
         }
         else {
             if (creepToSpawn !== -6) {
-                console.log(`SPAWN ERROR:\t${creepToSpawn}\t${cName}`)
+                console.log(`SPAWN ERROR:\t${creepToSpawn}\t${cName}\t${this.memory.Creeps[this.memory.queue[i]].role}`)
             }
         }
     }
@@ -678,7 +681,6 @@ Room.prototype.checkRoadByPath = function(pathStr) {
 }
 
 Room.prototype.saturateSource = function(posStr, energyCapacity = 3000, road = false) {
-    console.log(`${this.name} did the thing`)
     let numSources = _.keys(this.memory.sources).length
     let minerPriority = 9 - (0.01 + 0.01*(numSources-1)*2)
     let haulerPriority = minerPriority - 0.01
