@@ -59,7 +59,7 @@ Room.prototype.populateMatrix = function() {
         Memory.RoomCache = {}
     }
 
-    let bunker = this.placeBunker()
+    let bunker = this.memory.Bunker || this.placeBunker()
 
     if (bunker == false) {
         return false
@@ -201,7 +201,7 @@ Room.prototype.placeBunker = function(size = 7) {
             let adj = [grid.get(i-1, v), grid.get(i, v-1), grid.get(i-1, v-1)]
             let score = Math.min(...adj)+1
             grid.set(i, v, score)
-            if (score > 15) {
+            if (score > size*2+1) {
                 spots.push(newPos)
             }
 
@@ -213,7 +213,7 @@ Room.prototype.placeBunker = function(size = 7) {
         return false
     }
 
-    let targetPos = _.min(spots, s => s.add(-7, 7).getRangeTo(this.controller.pos))
+    let targetPos = _.min(spots, s => s.add(-7, -7).getRangeTo(this.controller.pos))
     let bunkerPos = targetPos.add(-7, -7)
     this.memory.Bunker = RoomPosition.serialize(bunkerPos)
 

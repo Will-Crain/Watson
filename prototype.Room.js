@@ -20,7 +20,7 @@ Room.prototype.operate = function() {
         if (_.isUndefined(mineralObj)) {
             return
         }
-        if (mineralObj.mineralAmount > 0) {
+        if (mineralObj.mineralAmount <= 0) {
             return
         }
 
@@ -87,7 +87,7 @@ Room.prototype.runRCL1 = function(scope) {
     
     // Room levels up
     if (this.memory.conLevel < this.controller.level && this.controller.level == 2) {
-        this.memory.toRCL[2] = Game.time - this.memory.toRCL[1]
+        this.memory.toRCL[2] = Game.time
         this.setState('RCL2', {})
         return
     }
@@ -146,7 +146,7 @@ Room.prototype.runRCL2 = function(scope) {
     
     // Room levels up
     if (this.memory.conLevel < this.controller.level && this.controller.level == 3) {
-        this.memory.toRCL[3] = Game.time - this.memory.toRCL[2]
+        this.memory.toRCL[3] = Game.time
         this.setState('RCL3', {})
         return
     }
@@ -193,7 +193,7 @@ Room.prototype.runRCL3 = function(scope) {
     
     // Room levels up
     if (this.memory.conLevel < this.controller.level && this.controller.level == 4) {
-        this.memory.toRCL[4] = Game.time - this.memory.toRCL[3]
+        this.memory.toRCL[4] = Game.time
         this.setState('RCL4', {})
         return
     }
@@ -233,7 +233,7 @@ Room.prototype.runRCL4 = function(scope) {
                 
                 this.addRoadFromPath(serPath)
             }
-            this.updateHaulers(true)
+            // this.updateHaulers(true)
 
             this.memory.eventFlags[4]['01STORAGE'] = true
         }
@@ -248,7 +248,7 @@ Room.prototype.runRCL4 = function(scope) {
     
     // Room levels up
     if (this.memory.conLevel < this.controller.level && this.controller.level == 5) {
-        this.memory.toRCL[5] = Game.time - this.memory.toRCL[4]
+        this.memory.toRCL[5] = Game.time
         this.setState('RCL5', {})
         return
     }
@@ -284,7 +284,7 @@ Room.prototype.runRCL6 = function(scope) {
     
     // Room levels up
     if (this.memory.conLevel < this.controller.level && this.controller.level == 7) {
-        this.memory.toRCL[7] = Game.time - this.memory.toRCL[6]
+        this.memory.toRCL[7] = Game.time
         this.setState('RCL7', {})
         return
     }
@@ -302,7 +302,7 @@ Room.prototype.runRCL7 = function(scope) {
     
     // Room levels up
     if (this.memory.conLevel < this.controller.level && this.controller.level == 8) {
-        this.memory.toRCL[8] = Game.time - this.memory.toRCL[7]
+        this.memory.toRCL[8] = Game.time
         this.setState('RCL8', {})
         return
     }
@@ -682,8 +682,8 @@ Room.prototype.checkRoadByPath = function(pathStr) {
 
 Room.prototype.saturateSource = function(posStr, energyCapacity = 3000, road = false) {
     let numSources = _.keys(this.memory.sources).length
-    let minerPriority = 9 - (0.01 + 0.01*(numSources-1)*2)
-    let haulerPriority = minerPriority - 0.01
+    let minerPriority = 3 + (0.01 + 0.01*(numSources-1)*2)
+    let haulerPriority = minerPriority + 0.01
 
     let thisSource = this.memory.sources[posStr]
 
@@ -701,7 +701,8 @@ Room.prototype.addSource = function(posStr, saturate = true, path = false) {
     }
     
     if (path == false) {
-        let dropOffSpot = RoomPosition.parse(_.first(this.memory.takeFrom))
+        let bunkerPosObj = RoomPosition.parse(this.memory.Bunker)
+        let dropOffSpot = bunkerPosObj.add(-2, 1)
         let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 5, plainCost: 2, swampCost: 5})
 
         let serPath = PathFinder.serialize(objPath.path)

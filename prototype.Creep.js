@@ -1,7 +1,7 @@
 'use strict'
 
 Creep.prototype.runMoveTo = function(scope) {    
-    let {posStr, range = 1, exitOnRoom = false} = scope
+    let {posStr, range = 1, exitOnRoom = false, ignoreCreeps = false} = scope
     let posObj = RoomPosition.parse(posStr)
     
     if (exitOnRoom == true && this.room.name == posObj.roomName && (this.pos.x < 48 && this.pos.x > 1 && this.pos.y < 48 && this.pos.y > 1)) {
@@ -12,7 +12,7 @@ Creep.prototype.runMoveTo = function(scope) {
     }
     else {
         if (exitOnRoom == false) {
-            this.moveTo(posObj)
+            this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps})
         }
         else {
             this.moveTo(posObj, {range: 20})
@@ -132,7 +132,7 @@ Creep.prototype.runScout = function(scope) {
                 }
             }
             else {
-                this.pushState('MoveTo', {posStr: RoomPosition.serialize(this.room.controller.pos)})
+                this.pushState('MoveTo', {posStr: RoomPosition.serialize(this.room.controller.pos), ignoreCreeps: true})
             }
         }
     }
@@ -310,15 +310,18 @@ Creep.prototype.runFindRepair = function(scope) {
 }
 
 Creep.prototype.runBuild = function(scope) {
-    let {posStr, getPosStr = false} = scope
+    let {posStr, getPosStr = false, cont = true} = scope
     let posObj = RoomPosition.parse(posStr).lookFor(LOOK_CONSTRUCTION_SITES)[0]
     
     if (_.isUndefined(posObj)) {
-        this.say('Build 1')
         this.popState()
     }
     
     if (this.carry.energy === 0) {
+        if (cont == false) {
+            this.popState()
+            return
+        }
         if (getPosStr !== false) {
             let getPosObj = RoomPosition.parse(getPosStr).lookFor(LOOK_STRUCTURES)[0]
             this.pushState('PickUp', {posStr: getPosStr, res: RESOURCE_ENERGY})
@@ -337,7 +340,6 @@ Creep.prototype.runBuild = function(scope) {
     else {
 
         if (_.isUndefined(posObj) || _.isNull(posObj)) {
-            this.say('Build 3')
             this.popState()
             return
         }
@@ -388,14 +390,27 @@ Creep.prototype.runFindBuild = function(scope) {
                 return homeRoom.memory.structures[index].priority
             }
         })
+        let takeFrom = homeRoom.getTake()
+        if (takeFrom == false) {
+            let allowed = ['container', 'storage', 'terminal']
+            testObj = _.find(this.room.find(FIND_STRUCTURES, {filter: s => allowed.includes(s.structureType) && s.store.energy > 0}))
+            if (_.isUndefined(testObj)) {
+                // cry
+            }
+            else {
+                takeFrom = RoomPosition.parse(testObj.pos)
+            }
+        }
         this.pushState('Build', {posStr: RoomPosition.serialize(targetSite.pos), getPosStr: homeRoom.getTake()})
     }
 }
 
 Creep.prototype.runHarvest = function(scope) {
-    let {posStr, cont = true} = scope
+    let {posStr, cont = true, roomName = this.memory.homeRoom} = scope
     let homeRoom = Game.rooms[this.memory.homeRoom]
     let posObj = RoomPosition.parse(posStr)
+
+    let targetRoom = Game.rooms[roomName]
     
     // this.pushState('Harvest', {posStr: RoomPosition.serialize(targetSource.pos), cont: false})
     if (_.sum(this.carry) == this.carryCapacity) {
@@ -404,20 +419,20 @@ Creep.prototype.runHarvest = function(scope) {
             return
         }
 
-        let dropOff = homeRoom.getStore(RESOURCE_ENERGY)
+        let dropOff = targetRoom.getStore(RESOURCE_ENERGY)
         
         if (dropOff == false) {
             let cSites = this.room.find(FIND_CONSTRUCTION_SITES)
             if (cSites.length > 0) {
-                let targetSite = _.max(cSites, s => homeRoom.memory.structures[`${RoomPosition.serialize(s.pos)}${s.structureType}`].priority || PRIORITY_BY_STRUCTURE[s.structureType])
+                let targetSite = _.max(cSites, s => targetRoom.memory.structures[`${RoomPosition.serialize(s.pos)}${s.structureType}`].priority || PRIORITY_BY_STRUCTURE[s.structureType])
                 this.pushState('Build', {posStr: RoomPosition.serialize(targetSite.pos)})
             }
             else {
-                this.pushState('Upgrade', {posStr: RoomPosition.serialize(homeRoom.controller.pos), cont: false})
+                this.pushState('Upgrade', {posStr: RoomPosition.serialize(targetRoom.controller.pos), cont: false})
             }
         }
         else {
-            this.pushState('DropOff', {posStr: homeRoom.getStore(RESOURCE_ENERGY)})
+            this.pushState('DropOff', {posStr: targetRoom.getStore(RESOURCE_ENERGY)})
         }
     }
     else {
@@ -431,10 +446,10 @@ Creep.prototype.runHarvest = function(scope) {
             let harvestAction = this.harvest(targObj)
             
             if (harvestAction == 0) {
-                if (_.isUndefined(homeRoom.memory.mineRooms[this.room.name])) {
-                    homeRoom.memory.mineRooms[this.room.name] = 0
+                if (_.isUndefined(targetRoom.memory.mineRooms[this.room.name])) {
+                    targetRoom.memory.mineRooms[this.room.name] = 0
                 }
-                homeRoom.memory.mineRooms[this.room.name] += this.getMinePower()
+                targetRoom.memory.mineRooms[this.room.name] += this.getMinePower()
             }
         }
     }
@@ -849,14 +864,12 @@ Creep.prototype.runBootstrap = function(scope) {
         this.pushState('MoveTo', {posStr: RoomPosition.serialize(roomPos), exitOnRoom: true})
     }
     else {
-
         if (_.sum(this.carry) == 0) {
             let sources = this.room.find(FIND_SOURCES, {filter: s => s.energy > 0})
             let targetSource = this.pos.findClosestByRange(sources)
             this.pushState('Harvest', {posStr: RoomPosition.serialize(targetSource.pos), cont: false})
         }
         else {
-
             if (this.room.controller.ticksToDowngrade < 5000) {
                 this.pushState('Upgrade', {roomName: roomName, cont: false})
             }
@@ -864,10 +877,9 @@ Creep.prototype.runBootstrap = function(scope) {
                 // Is spawn built?
                 let targetRoom = Game.rooms[roomName]
                 let conSites = targetRoom.find(FIND_MY_CONSTRUCTION_SITES)
-                // let targetSite = _.first(conSites)
                 let targetSite = _.max(conSites, s => PRIORITY_BY_STRUCTURE[s.structureType] || 10)
                 if (conSites.length != 0) {
-                    this.pushState('Build', {posStr: RoomPosition.serialize(targetSite.pos)})
+                    this.pushState('Build', {posStr: RoomPosition.serialize(targetSite.pos), cont: false})
                 }
                 else {
                     let spawnObj = Game.rooms[roomName].find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_SPAWN})[0]
@@ -913,6 +925,10 @@ Creep.prototype.runClaim = function(scope) {
             let creepAction = this.claimController(this.room.controller)
 
             if (creepAction == 0) {
+                let structs = this.room.find(FIND_STRUCTURES)
+                for (let i in structs) {
+                    structs[i].destroy()
+                }
                 let bunkerPos = Game.rooms[roomName].populateMatrix()
 
                 if (bunkerPos == false) {
@@ -920,9 +936,7 @@ Creep.prototype.runClaim = function(scope) {
                     this.suicide()
                     // cry
                 }
-                else {
-                    Game.rooms[roomName].addFromBlueprint(Game.rooms[roomName].memory.Bunker, Memory.Blueprints.Bunker, 1)
-                    
+                else {                    
                     Game.rooms[this.memory.homeRoom].addCreep('HELPER', [['Bootstrap', {roomName: roomName}]])
                     Game.rooms[this.memory.homeRoom].addCreep('HELPER', [['Bootstrap', {roomName: roomName}]])
 
