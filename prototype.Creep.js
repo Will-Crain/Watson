@@ -112,6 +112,7 @@ Creep.prototype.runScout = function(scope) {
     else {
         
         if (addSources == true && _.isUndefined(this.memory.added)) {
+            this.pushState('NoRespawn', {})
             this.memory.added = true
             let sources = this.room.find(FIND_SOURCES)
             if (sources.length !== 0) {
