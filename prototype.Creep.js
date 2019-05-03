@@ -72,7 +72,7 @@ Creep.prototype.runUpgrade = function(scope) {
             }
 
             let getTake = posObj.pos.findClosestByRange(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_CONTAINER})
-            if (getTake != false) {
+            if (!_.isNull(getTake)) {
                 this.pushState('PickUp', {posStr: RoomPosition.serialize(getTake.pos), res: RESOURCE_ENERGY})
             }
             else {
@@ -394,12 +394,12 @@ Creep.prototype.runFindBuild = function(scope) {
         let takeFrom = homeRoom.getTake()
         if (takeFrom == false) {
             let allowed = ['container', 'storage', 'terminal']
-            testObj = _.find(this.room.find(FIND_STRUCTURES, {filter: s => allowed.includes(s.structureType) && s.store.energy > 0}))
+            let testObj = _.find(homeRoom.find(FIND_STRUCTURES, {filter: s => allowed.includes(s.structureType) && s.store.energy > 0}))
             if (_.isUndefined(testObj)) {
                 // cry
             }
             else {
-                takeFrom = RoomPosition.parse(testObj.pos)
+                takeFrom = RoomPosition.serialize(testObj.pos)
             }
         }
         this.pushState('Build', {posStr: RoomPosition.serialize(targetSite.pos), getPosStr: homeRoom.getTake()})
