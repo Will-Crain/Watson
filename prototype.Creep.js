@@ -1,21 +1,49 @@
 'use strict'
 
 Creep.prototype.runMoveTo = function(scope) {    
-    let {posStr, range = 1, exitOnRoom = false, ignoreCreeps = false} = scope
+    let {posStr, range = 1, travel = false, ignoreCreeps = false} = scope
+    if (!posStr instanceof String) {
+        this.popState()
+    }
     let posObj = RoomPosition.parse(posStr)
-    
-    if (exitOnRoom == true && this.room.name == posObj.roomName && (this.pos.x < 48 && this.pos.x > 1 && this.pos.y < 48 && this.pos.y > 1)) {
-        this.popState()
-    }
-    if (this.pos.inRangeTo(posObj, range)) {
-        this.popState()
-    }
-    else {
-        if (exitOnRoom == false) {
-            this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps})
+
+    if (this.room.name !== posObj.roomName) {
+        if (travel == false) {
+            let route = Game.map.findRoute(this.room, posObj.roomName, {routeCallback(rName, frName) {
+            if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'SOURCE_KEEPER') {
+                return 50
+            }
+            else {
+                return 1
+            }
+        }})
+            let nextRoom = _.first(route).room
+            let roomPos = new RoomPosition(24, 24, nextRoom)
+            if (this.pos.inRangeTo(posObj, range)) {
+                this.popState()
+            }
+            else {
+                this.pushState('MoveTo', {range: 20, posStr: RoomPosition.serialize(roomPos), travel: true})
+            }
         }
         else {
-            this.moveTo(posObj, {range: 20})
+            this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps})
+        }
+    }
+
+    else {
+        if (this.room.name == posObj.roomName) {
+            if (travel == true && !this.pos.isNearExit()) {
+                this.popState()
+            }
+            else {
+                if (this.pos.inRangeTo(posObj, range)) {
+                    this.popState()
+                }
+                else {
+                    this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps})
+                }
+            }
         }
     }
 }
@@ -65,7 +93,7 @@ Creep.prototype.runUpgrade = function(scope) {
 
             let boosted = _.any(this.body, s => s.boost)
             if (boosted == false) {
-                let getBoost = posObj.pos.findClosestByRange(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_LAB && s.mineralAmount > 0})
+                let getBoost = posObj.pos.findClosestByRange(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_LAB && s.mineralAmount >= 30})
                 if (!_.isNull(getBoost)) {
                     this.pushState('Boost', {type: 'XGH2O', posStr: RoomPosition.serialize(getBoost.pos)})
                 }
@@ -284,7 +312,12 @@ Creep.prototype.runFindRepair = function(scope) {
     
     if (_.sum(this.carry) == 0) {
         let pickUp = homeRoom.getTake(RESOURCE_ENERGY)
-        this.pushState('PickUp', {posStr: pickUp})
+        if (pickUp !== false) {
+            this.pushState('PickUp', {posStr: pickUp})
+        }
+        else {
+            this.pushState('FindBuild', {})
+        }
     }
     else {
         let toRepair = []
@@ -299,8 +332,14 @@ Creep.prototype.runFindRepair = function(scope) {
         }
 
         if (toRepair.length == 0) {
-            let conPos = RoomPosition.serialize(this.room.controller.pos)
-            this.pushState('Upgrade', {posStr:conPos, cont: false})
+            let toBuild = this.room.find(FIND_CONSTRUCTION_SITES)
+            if (toBuild.length > 0) {
+                this.pushState('FindBuild', {})
+            }
+            else {
+                let conPos = RoomPosition.serialize(this.room.controller.pos)
+                this.pushState('Upgrade', {posStr:conPos, cont: false})
+            }
         }
         else {
             let repairTarg = _.first(toRepair)
@@ -393,12 +432,12 @@ Creep.prototype.runFindBuild = function(scope) {
         let takeFrom = homeRoom.getTake()
         if (takeFrom == false) {
             let allowed = ['container', 'storage', 'terminal']
-            testObj = _.find(this.room.find(FIND_STRUCTURES, {filter: s => allowed.includes(s.structureType) && s.store.energy > 0}))
+            let testObj = _.find(this.room.find(FIND_STRUCTURES, {filter: s => allowed.includes(s.structureType) && s.store.energy > 0}))
             if (_.isUndefined(testObj)) {
                 // cry
             }
             else {
-                takeFrom = RoomPosition.parse(testObj.pos)
+                takeFrom = RoomPosition.serialize(testObj.pos)
             }
         }
         this.pushState('Build', {posStr: RoomPosition.serialize(targetSite.pos), getPosStr: homeRoom.getTake()})
@@ -460,59 +499,42 @@ Creep.prototype.runMineMineral = function(scope) {
     let roomName = standPos.roomName
     let homeRoom = Game.rooms[this.memory.homeRoom]
 
-    if (this.room.name !== roomName) {
-        let route = Game.map.findRoute(this.room, roomName, {routeCallback(rName, frName) {
-            if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'SOURCE_KEEPER') {
-                return 50
-            }
-            else {
-                return 1
-            }
-        }})
-        let nextRoom = _.first(route).room
-        let roomPos = new RoomPosition(24, 24, nextRoom)
-
-        this.pushState('MoveTo', {posStr: RoomPosition.serialize(roomPos), exitOnRoom: true})
+    if (!this.pos.inRangeTo(standPos, 0)) {
+        this.pushState('MoveTo', {posStr: standPosStr, range: 0})
     }
     else {
-        if (!this.pos.inRangeTo(standPos, 0)) {
-            this.pushState('MoveTo', {posStr: standPosStr, range: 0})
+        let mineObj = RoomPosition.parse(minePosStr).lookFor(LOOK_MINERALS)[0]
+        let extractor = _.find(RoomPosition.parse(minePosStr).lookFor(LOOK_STRUCTURES), s => s.structureType == STRUCTURE_EXTRACTOR)
+        if (mineObj.mineralAmount == 0) {
+            this.pushState('NoRespawn', {})
+
+            let hauler = _.find(_.keys(homeRoom.memory.Creeps), s => _.last(homeRoom.memory.Creeps[s].baseStack)[1].pickUp == _.last(this.memory.stack)[1].standPosStr)
+            if (!_.isUndefined(hauler)) {
+                Game.creeps[hauler].pushState('NoRespawn', {})
+            }
+            homeRoom.memory.minerals[minePosStr].active = false
+            homeRoom.memory.minerals[minePosStr].ticks = mineObj.ticksToRegeneration
         }
+
+        if (extractor.cooldown > 0) {
+            return
+        }
+
         else {
-            let mineObj = RoomPosition.parse(minePosStr).lookFor(LOOK_MINERALS)[0]
-            let extractor = _.find(RoomPosition.parse(minePosStr).lookFor(LOOK_STRUCTURES), s => s.structureType == STRUCTURE_EXTRACTOR)
-            if (mineObj.mineralAmount == 0) {
-                this.pushState('NoRespawn', {})
-
-                let hauler = _.find(_.keys(homeRoom.memory.Creeps), s => _.last(homeRoom.memory.Creeps[s].baseStack)[1].pickUp == _.last(this.memory.stack)[1].standPosStr)
-                if (!_.isUndefined(hauler)) {
-                    Game.creeps[hauler].pushState('NoRespawn', {})
-                }
-                homeRoom.memory.minerals[minePosStr].active = false
-                homeRoom.memory.minerals[minePosStr].ticks = mineObj.ticksToRegeneration
+            let container = _.find(standPos.lookFor(LOOK_STRUCTURES), s => s.structureType == STRUCTURE_CONTAINER)
+            if (_.isUndefined(container)) {
+                // cry
             }
-
-            if (extractor.cooldown > 0) {
-                return
-            }
-
             else {
-                let container = _.find(standPos.lookFor(LOOK_STRUCTURES), s => s.structureType == STRUCTURE_CONTAINER)
-                if (_.isUndefined(container)) {
+                if (_.sum(container.store) >= container.storeCapacity) {
                     // cry
                 }
                 else {
-                    if (_.sum(container.store) >= container.storeCapacity) {
-                        // cry
-                    }
-                    else {
-                        this.harvest(mineObj)
-                    }
+                    this.harvest(mineObj)
                 }
             }
         }
     }
-
 }
 Creep.prototype.runMine = function(scope) {
     let {standPosStr, minePosStr} = scope
@@ -992,7 +1014,7 @@ Creep.prototype.runReserve = function(scope) {
             }
             
             if (cPosStr == false) {
-                this.pushState('MoveTo', {posStr: RoomPosition.serialize(this.controller.pos), range: 1})
+                this.pushState('MoveTo', {posStr: RoomPosition.serialize(this.room.controller.pos), range: 1})
             }
             else {
                 this.pushState('MoveTo', {posStr: cPosStr, range: 0})
