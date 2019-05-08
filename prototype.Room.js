@@ -439,7 +439,7 @@ Room.prototype.setup = function() {
     this.memory.stack = [[`RCL1`, {}]]
     this.memory.queue = []
     this.memory.conLevel = 0
-    this.memory.Bunker = ''
+    // this.memory.Bunker = ''
     this.memory.constructionSites = 0
     this.memory.mineRooms = {}
 
@@ -455,12 +455,13 @@ Room.prototype.setup = function() {
 
 Room.prototype.checkToSpawn = function() {
     for (let i in this.memory.Creeps) {
-        if (_.isUndefined(Game.creeps[i]) && this.memory.Creeps[i].removeOnDeath == true) {
+        if ( _.isUndefined(Game.creeps[i]) && (this.memory.Creeps[i] !== undefined && this.memory.Creeps[i].removeOnDeath == true)) {
             this.removeCreep(i)
             continue
         }
         
-        else if (_.isUndefined(Game.creeps[i]) && this.memory.Creeps[i].removeOnDeath == false) {
+
+        else if ( _.isUndefined(Game.creeps[i]) && (this.memory.Creeps[i] !== undefined &&this.memory.Creeps[i].removeOnDeath == false)) {
             this.addToQueue(i)
             continue
         }
@@ -691,10 +692,12 @@ Room.prototype.saturateSource = function(posStr, energyCapacity = 3000, road = f
     this.addCreep('HAULER', [['Haul', {pickUp: thisSource.container, dist: thisSource.pathLength, dropOff: _.first(this.memory.storeTo)}]], haulerPriority, false, this.getHaulerBody(thisSource.pathLength, energyCapacity, road))
 }
 
-Room.prototype.addSource = function(posStr, saturate = true, path = false) {
+Room.prototype.addSource = function(posStr, saturate = false, path = false) {
     let posObj = RoomPosition.parse(posStr)
     let obj = _.first(posObj.lookFor(LOOK_SOURCES))
     
+    let rName = this.name
+
     if (obj === undefined ) {
         return false
         // Request vision?
@@ -702,14 +705,20 @@ Room.prototype.addSource = function(posStr, saturate = true, path = false) {
     
     if (path == false) {
         let bunkerPosObj = RoomPosition.parse(this.memory.Bunker)
-        let dropOffSpot = bunkerPosObj.add(-2, 1)
-        let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 5, plainCost: 2, swampCost: 5})
+        let dropOffSpot = bunkerPosObj.add(1, -2)
+        let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 5, plainCost: 2, swampCost: 5, roomCallback: function(roomName) {
+            if (roomName == rName) {
+                return PathFinder.CostMatrix.deserialize(Memory.RoomCache[rName].data)
+            }
+            else {
+                return new PathFinder.CostMatrix()
+            }
+        }})
 
         let serPath = PathFinder.serialize(objPath.path)
         let pathLength = objPath.path.length
         this.memory.sources[posStr] = {path: serPath, pathLength: pathLength, container: RoomPosition.serialize(_.last(objPath.path)), link: '', road: false}
     }
-
         
 
     if (saturate === true) {
@@ -971,7 +980,7 @@ Room.prototype.addRoadFromPath = function(pathStr, placeOnLast = false) {
         if (placeOnLast && i == path.length-1) {
             break
         }
-        this.addStructure(path[i], STRUCTURE_ROAD, PRIORITY_BY_STRUCTURE[STRUCTURE_ROAD] + 1*(path.length-i)/path.length)
+        this.addStructure(path[i], STRUCTURE_ROAD, this.RCL, PRIORITY_BY_STRUCTURE[STRUCTURE_ROAD] + 1*(path.length-i)/path.length)
     }
 }
 
