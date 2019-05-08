@@ -100,7 +100,7 @@ Creep.prototype.runUpgrade = function(scope) {
             }
 
             let getTake = posObj.pos.findClosestByRange(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_CONTAINER})
-            if (getTake != false) {
+            if (!_.isNull(getTake)) {
                 this.pushState('PickUp', {posStr: RoomPosition.serialize(getTake.pos), res: RESOURCE_ENERGY})
             }
             else {
@@ -140,6 +140,7 @@ Creep.prototype.runScout = function(scope) {
     else {
         
         if (addSources == true && _.isUndefined(this.memory.added)) {
+            this.pushState('NoRespawn', {})
             this.memory.added = true
             let sources = this.room.find(FIND_SOURCES)
             if (sources.length !== 0) {
