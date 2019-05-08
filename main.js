@@ -50,6 +50,7 @@ module.exports.loop = function() {
             Game.creeps[i].invokeState()
         }
         catch(e) {
+            Game.creeps[i].popState()
             console.log(`${e.name}\n${e.message}\n${e.stack}`)
         }
     }
