@@ -19,7 +19,7 @@ Room.prototype.generateMatrix = function() {
             let onDiagonal = 0
 
             if (newPos.isOnEdge() || newPos.isNearExit()) {
-                grid.set(i, v, 255)
+                grid.set(i, v, 5)
                 continue
             }
 
@@ -49,7 +49,7 @@ Room.prototype.generateMatrix = function() {
         Memory.RoomCache = {}
     }
 
-    Memory.RoomCache[this.name] = {data: grid.outData(), structures: false}
+    Memory.RoomCache[this.name] = {data: grid.serialize(), structures: false}
     return grid
 }
 
@@ -106,8 +106,11 @@ Room.prototype.populateMatrix = function() {
                     if (roomName == rName) {
                         return grid
                     }
-                    else {
+                    else if (Game.rooms[roomName] != undefined) {
                         return Game.rooms[roomName].generateMatrix()
+                    }
+                    else {
+                        return new PathFinder.CostMatrix()
                     }
                 }
             })
@@ -152,9 +155,7 @@ Room.prototype.populateMatrix = function() {
         }
     }
 
-    console.log('why here?')
-
-    Memory.RoomCache[this.name] = {data: grid.outData(), structures: grid.outStructures(), priority: grid.outPriority(), RCL: grid.outRCL()}
+    Memory.RoomCache[this.name] = {data: grid.serialize(), structures: grid.outStructures(), priority: grid.outPriority(), RCL: grid.outRCL()}
     grid.addStructures(this.name)
     return bunker
 }
