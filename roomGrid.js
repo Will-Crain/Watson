@@ -54,10 +54,6 @@
 			}
 		}
 
-		outData() {
-			return JSON.stringify(this._bits)
-		}
-
 		outStructures() {
 			return JSON.stringify(this.structures)
 		}
