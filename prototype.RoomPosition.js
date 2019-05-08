@@ -3,12 +3,7 @@
 RoomPosition.prototype.getAdjacent = function(checkStructures = false) {
     let tRoom = Game.rooms[this.roomName]
     
-    if (!tRoom) {
-        return false
-    }
-    
     let terrain = tRoom.getTerrain()
-    
     let outStrArr = []
     
     for (let i in DIRECTIONS) {
@@ -50,6 +45,9 @@ RoomPosition.prototype.isNearExit = function() {
 }
 
 RoomPosition.prototype.add = function(x, y) {
+    if (this.x+x > 49 || this.y+y || 49 || this.x+x < 0 || this.y+y < 0) {
+        return this
+    }
     return new RoomPosition(this.x+x, this.y+y, this.roomName)
 }
 
