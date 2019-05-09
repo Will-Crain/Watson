@@ -37,3 +37,10 @@ global.HSL_TO_HEX = function(h, s, l) {
 	let HEX = RGB_TO_HEX(RGB)
 	return HEX
 }
+
+global.PROFILE = function() {
+    let avgCPU = _.sum(Memory.cpuUsage)/Memory.cpuUsage.length
+    let numCreeps = _.sum(Memory.rooms, s => _.keys(s.Creeps).length)
+    let numRooms = _.sum(Game.rooms, s => s.controller && s.controller.my)
+    console.log(`CPU:\t${avgCPU.toFixed(2)} CPU over the last ${Memory.cpuUsage.length} ticks\n\t${ (avgCPU/numCreeps).toFixed(2)} CPU per Creep\n\t${ (avgCPU/numRooms).toFixed(2)} CPU per Room`)
+}
