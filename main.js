@@ -50,9 +50,20 @@ module.exports.loop = function() {
             Game.creeps[i].invokeState()
         }
         catch(e) {
-            Game.creeps[i].popState()
+            // Game.creeps[i].popState()
             console.log(`${e.name}\n${e.message}\n${e.stack}`)
         }
     }
     
+    
+    
+    if (_.isUndefined(Memory.cpuUsage)) {
+        Memory.cpuUsage = []
+    }
+    
+    if (Memory.cpuUsage.length > 1000) {
+        Memory.cpuUsage.pop()
+    }
+    
+    Memory.cpuUsage.unshift(Game.cpu.getUsed())
 }
