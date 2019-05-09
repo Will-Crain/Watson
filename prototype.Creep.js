@@ -2,28 +2,25 @@
 
 Creep.prototype.runMoveTo = function(scope) {    
     let {posStr, range = 1, travel = false, ignoreCreeps = false} = scope
-    if (!posStr instanceof String) {
-        this.popState()
-    }
     let posObj = RoomPosition.parse(posStr)
 
     if (this.room.name !== posObj.roomName) {
         if (travel == false) {
             let route = Game.map.findRoute(this.room, posObj.roomName, {routeCallback(rName, frName) {
-            if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'SOURCE_KEEPER') {
-                return 50
-            }
-            else {
-                return 1
-            }
-        }})
+                if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'SOURCE_KEEPER') {
+                    return 50
+                }
+                else {
+                    return 1
+                }
+            }})
             let nextRoom = _.first(route).room
             let roomPos = new RoomPosition(24, 24, nextRoom)
             if (this.pos.inRangeTo(posObj, range)) {
                 this.popState()
             }
             else {
-                this.pushState('MoveTo', {range: 20, posStr: RoomPosition.serialize(roomPos), travel: true})
+                this.pushState('MoveTo', {range: 2, posStr: RoomPosition.serialize(roomPos), travel: true})
             }
         }
         else {
@@ -1046,10 +1043,6 @@ Creep.prototype.runRecycle = function(scope) {
 Creep.prototype.runDropOff = function(scope) {
     let {posStr, cont = true} = scope
     
-    if (typeof posStr !== 'string') {
-        this.popState()
-    }
-    
     if (posStr == false) {
         this.pushState('Wait', {until: Game.time+5})
     }
@@ -1063,7 +1056,12 @@ Creep.prototype.runDropOff = function(scope) {
             this.popState()
         }
         else {
-            let targObj = posObj.lookFor(LOOK_STRUCTURES)[0]
+            let allowed = [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER, STRUCTURE_CONTAINER, STRUCTURE_LINK, STRUCTURE_STORAGE, STRUCTURE_TERMINAL, STRUCTURE_POWER_SPAWN, STRUCTURE_LAB]
+            let targObj = _.find(posObj.lookFor(LOOK_STRUCTURES), s => allowed.includes(s.structureType))
+
+            if (_.isUndefined(targObj)) {
+                this.popState()
+            }
             
             let transAction = this.transfer(targObj, _.max(_.keys(this.carry), s => this.carry[s]))
             if (transAction == -8 || transAction == 0) {
