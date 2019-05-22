@@ -3,7 +3,11 @@
 require('require')
 
 module.exports.loop = function() {
-    
+    let orders = false
+    if (Game.cpu.bucket > 1e3) {
+        let orders = Game.market.getAllOrders()
+    }
+
     if (!_.has(Memory, 'Blueprints')) {
         Memory.Blueprints = {Bunker: JSON.parse(Bunker)}
     }
@@ -66,4 +70,5 @@ module.exports.loop = function() {
     }
     
     Memory.cpuUsage.unshift(Game.cpu.getUsed())
+
 }
