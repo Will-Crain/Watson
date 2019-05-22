@@ -330,6 +330,8 @@ Room.prototype.claimRoom = function(roomName) {
     this.addCreep('CLAIMER', [['Claim', {roomName: roomName}]])
 }
 
+//Room.prototype.addStructure = function(posStr, structureType, RCL, priority = undefined) {
+
 Room.prototype.addFromBlueprint = function(posStr, blueprint, level) {
     let posObj = RoomPosition.parse(posStr)
     
@@ -337,7 +339,8 @@ Room.prototype.addFromBlueprint = function(posStr, blueprint, level) {
         let dx = Number(i.substr(0, 3))
         let dy = Number(i.substr(3, 3))
         let newPos = posObj.add(dx, dy)
-        this.addStructure(RoomPosition.serialize(newPos), blueprint[level][i])
+        console.log(dx, dy)
+        this.addStructure(RoomPosition.serialize(newPos), blueprint[level][i], level)
     }
 }
 
@@ -429,6 +432,16 @@ Room.prototype.getStore = function(resourceType = RESOURCE_ENERGY) {
     }
     
     return false
+}
+
+Room.prototype.spawnPowerCreep = function(name) {
+    let powerSpawn = _.find(this.find(FIND_MY_STRUCTURES), s => s.structureType == STRUCTURE_POWER_SPAWN)
+    if (_.isUndefined(powerSpawn)) {
+        return false
+    }
+
+    Game.powerCreeps[name].spawn(powerSpawn)
+    Game.powerCreeps[name].setState('Operate', {})
 }
 
 Room.prototype.setup = function() {
@@ -942,6 +955,30 @@ Room.prototype.updateHaulers = function(roads = false) {
 
 //      //      //      //      //      //      //      //      //      //      //      //
 
+Room.prototype.runMarket = function() {
+    let credits = Game.market.credits
+    let creditThreshold = 1e4
+
+    if (orders == false) {
+        return false
+    }
+
+    if (credits < creditThreshold) {
+        return false
+    }
+
+    if (_.isUndefined(this.terminal)) {
+        return false
+    }
+
+    let targetResources = _.keys(_.filter(this.terminal.store, s => s > 0))
+
+
+}
+
+//      //      //      //      //      //      //      //      //      //      //      //
+
+//      //      //      //      //      //      //      //      //      //      //      //
 Room.prototype.getStructures = function(newPos, toStore, range = 4) {
     let newStructs = newPos.findInRange(FIND_STRUCTURES, range)
 
