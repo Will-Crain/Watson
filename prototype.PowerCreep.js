@@ -145,7 +145,7 @@ PowerCreep.prototype.runAvoidStructures = function(scope) {
 
     if (_.isUndefined(this.memory.toPos)) {
         let structs = this.room.find(FIND_STRUCTURES)
-        let structGoal = _.map(structs, s => s = {pos: s.pos, range: 2})
+        let structGoal = _.map(structs, s => s = {pos: s.pos, range: 1})
         let pFind = PathFinder.search(this.pos, structGoal, {flee: true})
         
         if (pFind.path.length == 0) {
