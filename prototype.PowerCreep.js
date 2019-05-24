@@ -125,6 +125,7 @@ PowerCreep.prototype.runOperate = function(scope) {
         }
         else {
             this.usePower(PWR_OPERATE_STORAGE, this.room.storage)
+            this.pushState('AvoidStructures', {})
         }
     }
     
