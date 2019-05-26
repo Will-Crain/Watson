@@ -12,6 +12,12 @@ Room.prototype.standardRuntime = function() {
 
 Room.prototype.operate = function() {
 
+    // Process power, if it can
+    let powerSpawn = _.first(this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_POWER_SPAWN}))
+    if (!_.isUndefined(powerSpawn) && powerSpawn.power > 0 && powerSpawn.energy > 50) {
+        powerSpawn.processPower()
+    }
+
     // Check for minerals
     for (let i in this.memory.minerals) {
         let mineralPos = RoomPosition.parse(i)
