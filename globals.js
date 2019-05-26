@@ -13,6 +13,12 @@ global.DIRECTIONS = {
     8: [-1, -1]
 }
 
+global.ENERGY_STRUCTURES = 		[STRUCTURE_POWER_SPAWN, STRUCTURE_LINK, STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_TOWER, STRUCTURE_NUKER]
+global.POWER_STRUCTURES =		[STRUCTURE_POWER_SPAWN]
+global.MINERAL_STRUCTURES = 	[STRUCTURE_LAB]
+global.GHODIUM_STRUCTURES =		[STRUCTURE_NUKER]
+global.STORE_STRUCTURES = 		[STRUCTURE_TERMINAL, STRUCTURE_STORAGE, STRUCTURE_CONTAINER]
+
 global.BODY_ORDER = ['tough', 'move', 'carry', 'work', 'ranged_attack', 'attack', 'claim', 'heal']
 
 global.RECURSION_DEPTH = 5
@@ -23,8 +29,31 @@ global.ALLIANCE_PLAYERS =   []
 global.FRIEND_PLAYERS =     []
 global.HOSTILE_PLAYERS =    ['k-c', 'patrik']
 
+global.MAX_RESOURCES = {
+	STRUCTURE_STORAGE: {
+		energy:			400000,
+		power:			5000,
+		ops:			5000
+	},
+	STRUCTURE_TERMINAL:	{
+		energy:			50000,
+		power:			50000,
+		ops:			5000
+	}
+}
+
+global.MIN_RESOURCES = {
+	STRUCTURE_STORAGE: {
+		energy:			100000
+	},
+	STRUCTURE_TERMINAL: {
+		energy:			10000
+	}
+}
+
 global.DESIRED_RESOURCES = {
-	energy:				1e4
+	energy:				800000,
+	power:				10000
 }
 
 global.PRIORITY_BY_ROLE = {
