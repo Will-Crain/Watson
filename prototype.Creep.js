@@ -69,14 +69,6 @@ Creep.prototype.runManage = function(scope) {
 			return false
 		}
 
-		if (!_.isUndefined(coreLink) && coreLink.energy < coreLink.energyCapacity) {
-			let posStr = RoomPosition.serialize(coreLink.pos)
-			let amt = coreLink.energyCapacity - coreLink.energy
-
-			this.pushState('Deliver', {posStr: posStr, res: RESOURCE_ENERGY, amt: amt})
-			return
-		}
-
 		let deficit = {}
 		let surplus = {}
 
@@ -92,13 +84,48 @@ Creep.prototype.runManage = function(scope) {
 			}
 		}
 
+		if (!_.isUndefined(coreLink) && coreLink.energy < coreLink.energyCapacity && _.has(surplus, 'energy')) {
+			let takePos = 	RoomPosition.serialize(storage.pos)
+			let storePos = 	RoomPosition.serialize(coreLink.pos)
+			let amt = Math.min(coreLink.energyCapacity - coreLink.energy, this.carryCapacity - _.sum(this.carry))
+
+			this.pushState('Deliver', {takePos: takePos, storePos: storePos, res: RESOURCE_ENERGY, amt: amt})
+			return
+		}
+
+		if (!_.isUndefined(powerSpawn) && powerSpawn.energy < powerSpawn.energyCapacity * 0.3 && terminal.store.energy > 0) {
+			let takePos = 	RoomPosition.serialize(terminal.pos)
+			let storePos = 	RoomPosition.serialize(powerSpawn.pos)
+			let amt = Math.min(powerSpawn.energyCapacity - powerSpawn.energy, this.carryCapacity - _.sum(this.carry))
+
+			this.pushState('Deliver', {takePos: takePos, storePos: storePos, res: RESOURCE_ENERGY, amt: amt})
+			return
+		}
+		if (!_.isUndefined(powerSpawn) && powerSpawn.energy < powerSpawn.energyCapacity * 0.3 && storage.store.energy > DESIRED_RESOURCES.energy*0.9) {
+			let takePos = 	RoomPosition.serialize(storage.pos)
+			let storePos = 	RoomPosition.serialize(powerSpawn.pos)
+			let amt = Math.min(powerSpawn.energyCapacity - powerSpawn.energy, this.carryCapacity - _.sum(this.carry))
+
+			this.pushState('Deliver', {takePos: takePos, storePos: storePos, res: RESOURCE_ENERGY, amt: amt})
+			return
+		}
+
+		if (!_.isUndefined(powerSpawn) && powerSpawn.power < powerSpawn.powerCapacity * 0.3 && _.has(storage.store, 'power')) {
+			let takePos = 	RoomPosition.serialize(storage.pos)
+			let storePos = 	RoomPosition.serialize(powerSpawn.pos)
+			let amt = Math.min(powerSpawn.powerCapacity - powerSpawn.power, this.carryCapacity - _.sum(this.carry))
+
+			this.pushState('Deliver', {takePos: takePos, storePos: storePos, res: RESOURCE_POWER, amt: amt})
+			return
+		}
+
 		// presently, this fails if terminal is full
 		if (_.keys(surplus).length > 0) {
 
 			let takePos = 	RoomPosition.serialize(storage.pos)
 			let storePos =	RoomPosition.serialize(terminal.pos)
-			let res = _.max(_.keys(surplus), s => surplus[s])
-			let amt = _.max(surplus[res], this.carryCapacity - _.sum(this.carry))
+			let res = 		_.max(_.keys(surplus), s => surplus[s])
+			let amt = 		Math.min(surplus[res], this.carryCapacity - _.sum(this.carry))
 
 			this.pushState('Deliver', {takePos: takePos, storePos: storePos, res: res, amt: amt})
 			return
@@ -117,7 +144,7 @@ Creep.prototype.runManage = function(scope) {
 				let takePos = 	RoomPosition.serialize(terminal.pos)
 				let storePos =	RoomPosition.serialize(storage.pos)
 				let res = _.max(_.keys(metDemand), s => metDemand[s])
-				let amt = _.max(metDemand[res], this.carryCapacity - _.sum(this.carry))
+				let amt = Math.min(metDemand[res], this.carryCapacity - _.sum(this.carry))
 
 				this.pushState('Deliver', {takePos: takePos, storePos: storePos, res: res, amt: amt})
 			}
@@ -135,17 +162,13 @@ Creep.prototype.runDeliver = function(scope) {
 	if (_.isUndefined(this.memory.state)) {
 		this.memory.state = 0
 	}
-
 	if (this.memory.state === 0) {
 		// take phase
-		let resAmt = amt || 0
-		if (resAmt == 0) {
-			if (!this.carry[res]) {
-				this.popState()
-			}
-			else {
-				resAmt = this.carry[res]
-			}
+		let resAmt = amt - (this.carry[res] || 0) || (this.carryCapacity - _.sum(this.carry) - (this.carry[res] || 0))
+
+		if ((this.carry[res] && this.carry.res >= resAmt) || resAmt <= 0) {
+			this.memory.state = 1
+			return
 		}
 
 		let posObj = RoomPosition.parse(takePos)
@@ -172,10 +195,8 @@ Creep.prototype.runDeliver = function(scope) {
 			}
 		}
 	}
-
 	else if (this.memory.state === 1) {
 		// store phase
-
 		let posObj = RoomPosition.parse(storePos)
 		
 		if (!this.pos.inRangeTo(posObj, 1)) {
@@ -189,6 +210,23 @@ Creep.prototype.runDeliver = function(scope) {
 			}
 
 			let resAmt = this.carry[res]
+
+			if (res == RESOURCE_ENERGY) {
+				if (ENERGY_STRUCTURES.includes(targObj.structureType)) {
+					resAmt = Math.min(resAmt, targObj.energyCapacity - targObj.energy)
+				}
+			}
+			else if (res == RESOURCE_POWER) {
+				if (POWER_STRUCTURES.includes(targObj.structureType)) {
+					resAmt = Math.min(resAmt, targObj.powerCapacity - targObj.power)
+				}
+			}
+			else if (res == RESOURCE_GHODIUM) {
+				if (GHODIUM_STRUCTURES.includes(targObj.structureType)) {
+					resAmt = Math.min(resAmt, targObj.ghodiumCapacity - targObj.ghodium)
+				}
+			}
+
 			let transaction = this.transfer(targObj, res, resAmt)
 			let allowedCodes = [0, -6, -7, -8]
 			if (allowedCodes.includes(transaction)) {
