@@ -119,15 +119,15 @@ PowerCreep.prototype.runOperate = function(scope) {
         this.usePower(PWR_GENERATE_OPS)
     }
 
-    if (this.powers[PWR_OPERATE_STORAGE] && this.powers[PWR_OPERATE_STORAGE].cooldown == 0 && this.carry[RESOURCE_OPS] && this.carry[RESOURCE_OPS] >= 100) {
-        if (!this.pos.inRangeTo(Game.rooms[this.memory.homeRoom].storage, 3)) {
-            this.pushState('MoveTo', {posStr: RoomPosition.serialize(Game.rooms[this.memory.homeRoom].storage.pos)})
-        }
-        else {
-            this.usePower(PWR_OPERATE_STORAGE, this.room.storage)
-            this.pushState('AvoidStructures', {})
-        }
-    }
+    // if (this.powers[PWR_OPERATE_STORAGE] && this.powers[PWR_OPERATE_STORAGE].cooldown == 0 && this.carry[RESOURCE_OPS] && this.carry[RESOURCE_OPS] >= 100) {
+    //     if (!this.pos.inRangeTo(Game.rooms[this.memory.homeRoom].storage, 3)) {
+    //         this.pushState('MoveTo', {posStr: RoomPosition.serialize(Game.rooms[this.memory.homeRoom].storage.pos)})
+    //     }
+    //     else {
+    //         this.usePower(PWR_OPERATE_STORAGE, this.room.storage)
+    //         this.pushState('AvoidStructures', {})
+    //     }
+    // }
     
     if (_.sum(this.carry) >= this.carryCapacity) {
         let toStore = this.room.getStore(RESOURCE_OPS)
