@@ -19,6 +19,11 @@ global.MINERAL_STRUCTURES = 	[STRUCTURE_LAB]
 global.GHODIUM_STRUCTURES =		[STRUCTURE_NUKER]
 global.STORE_STRUCTURES = 		[STRUCTURE_TERMINAL, STRUCTURE_STORAGE, STRUCTURE_CONTAINER]
 
+global.DESIRED_RESOURCES = {
+	energy:				400000,
+	power:				50000
+}
+
 global.BODY_ORDER = ['tough', 'move', 'carry', 'work', 'ranged_attack', 'attack', 'claim', 'heal']
 
 global.RECURSION_DEPTH = 5
@@ -30,12 +35,12 @@ global.FRIEND_PLAYERS =     []
 global.HOSTILE_PLAYERS =    ['k-c', 'patrik']
 
 global.MAX_RESOURCES = {
-	STRUCTURE_STORAGE: {
+	storage: {
 		energy:			400000,
 		power:			5000,
 		ops:			5000
 	},
-	STRUCTURE_TERMINAL:	{
+	terminal:	{
 		energy:			50000,
 		power:			50000,
 		ops:			5000
@@ -43,17 +48,12 @@ global.MAX_RESOURCES = {
 }
 
 global.MIN_RESOURCES = {
-	STRUCTURE_STORAGE: {
+	storage: {
 		energy:			100000
 	},
-	STRUCTURE_TERMINAL: {
+	terminal: {
 		energy:			10000
 	}
-}
-
-global.DESIRED_RESOURCES = {
-	energy:				800000,
-	power:				10000
 }
 
 global.PRIORITY_BY_ROLE = {
@@ -161,6 +161,57 @@ global.BODIES = {
 
 	// Builds things
 	BUILDER:			[MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK]
+}
+
+global.SELL_PRICES = {
+	energy:				0.025,
+	O:					0.090,
+	H:					0.100,
+	Z:					0.070,
+	K:					0.070,
+	U:					0.055,
+	L:					0.075,
+	X:					0.120
+}
+
+global.REACTIONS = {
+	XGHO2:			['GHO2', 'X', 150],
+	XGH2O:			['GH2O', 'X', 80],
+	XZHO2:			['ZHO2', 'X', 60],
+	XZH2O:			['ZH2O', 'X', 160],
+	XLHO2:			['LHO2', 'X', 60],
+	XLH2O:			['LH2O', 'X', 65],
+	XKHO2:			['KHO2', 'X', 60],
+	XKH2O:			['KH2O', 'X', 60],
+	XUHO2:			['UHO2', 'X', 60],
+	XUH2O:			['UH2O', 'X', 60],
+
+	GHO2:			['GO', 'OH', 30],
+	GH2O:			['GH', 'OH', 15],
+	ZHO2:			['ZO', 'OH', 5],
+	ZH2O:			['ZH', 'OH', 40],
+	LHO2:			['LO', 'OH', 5],
+	LH2O:			['LH', 'OH', 10],
+	KHO2:			['KO', 'OH', 5],
+	KH2O:			['KH', 'OH', 5],
+	UHO2:			['UO', 'OH', 5],
+	UH2O:			['UH', 'OH', 5],
+
+	GO:				['G', 'O', 10],
+	GH:				['G', 'H', 10],
+	ZO:				['Z', 'O', 10],
+	ZH:				['Z', 'H', 20],
+	LO:				['L', 'O', 10],
+	LH:				['L', 'H', 15],
+	KO:				['K', 'O', 10],
+	KH:				['K', 'H', 10],
+	UO:				['U', 'O', 10],
+	UH:				['U', 'H', 10],
+
+	G:				['ZK', 'UL', 5],
+	UL:				['U', 'L', 5],
+	ZK:				['Z', 'K', 5],
+	OH:				['H', 'O', 20]
 }
 
 global.REVERSE_DIRECTION = {
