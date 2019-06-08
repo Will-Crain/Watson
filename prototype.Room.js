@@ -8,6 +8,7 @@ Room.prototype.standardRuntime = function() {
     this.buildQueue()
     this.fireTowers()
     this.defend()
+    this.runMarket()
 }
 
 Room.prototype.operate = function() {
@@ -535,7 +536,7 @@ Room.prototype.spawnQueue = function() {
         }
         else {
             if (creepToSpawn !== -6) {
-                console.log(`SPAWN ERROR:\t${creepToSpawn}\t${cName}\t${this.memory.Creeps[this.memory.queue[i]].role}`)
+                // console.log(`SPAWN ERROR:\t${creepToSpawn}\t${cName}\t${this.memory.Creeps[this.memory.queue[i]].role}`)
             }
         }
     }
@@ -639,8 +640,6 @@ Room.prototype.buildQueue = function() {
 
         this.memory.buildQueue = _.sortBy(this.memory.buildQueue, s => this.memory.structures[s].priority).reverse()
         for (let i = 0; i < Math.min((maxBuildSites - this.memory.constructionSites), this.memory.buildQueue.length); i++) {
-            
-
             let index = this.memory.buildQueue[i]
 
             let obj = this.memory.structures[index]
@@ -963,9 +962,9 @@ Room.prototype.updateHaulers = function(roads = false) {
 
 Room.prototype.runMarket = function() {
     let credits = Game.market.credits
-    let creditThreshold = 1e4
+    let creditThreshold = 1e5
 
-    if (orders == false) {
+    if (ORDERS == false) {
         return false
     }
 
@@ -977,9 +976,46 @@ Room.prototype.runMarket = function() {
         return false
     }
 
-    let targetResources = _.keys(_.filter(this.terminal.store, s => s > 0))
+    if (this.terminal.cooldown != 0) {
+        return false
+    }
 
+    let deficit = {}
+    let surplus = {}
 
+    for (let i in MAX_RESOURCES[STRUCTURE_TERMINAL]) {
+        if ((this.terminal.store[i] || 0) < MAX_RESOURCES[STRUCTURE_TERMINAL][i]) {
+            deficit[i] = MAX_RESOURCES[STRUCTURE_TERMINAL][i] - (this.terminal.store[i] || 0)
+        }
+    }
+
+    for (let i in this.terminal.store) {
+        if ((MAX_RESOURCES[STRUCTURE_TERMINAL][i] || 0) < this.terminal.store[i]) {
+            surplus[i] = this.terminal.store[i] - (MAX_RESOURCES[STRUCTURE_TERMINAL][i] || 0)
+        }
+    }
+
+    if (_.keys(surplus).length > 0) {
+        for (let i in surplus) {
+            let targetOrders = _.filter(ORDERS, s => s.type == ORDER_BUY && s.resourceType == i && s.price >= SELL_PRICES[i]*0.75)
+            let targetOrder = _.max(targetOrders, s => s = s.price)
+
+            if (_.isUndefined(targetOrder) || _.isNull(targetOrder) || !targetOrder || targetOrder == -Infinity) {
+                continue
+            }
+
+            let dp = 1e5
+            let energyRatio = Game.market.calcTransactionCost(dp, this.name, targetOrder.roomName)/dp
+            let targetAmount = Math.min(surplus[i], Math.ceil(this.terminal.store[RESOURCE_ENERGY]/energyRatio), targetOrder.amount)
+
+            if (targetAmount == 0) {
+                continue
+            }
+
+            let deal = Game.market.deal(targetOrder.id, targetAmount, this.name)
+            console.log(`SALE\t${deal}\nAMT\t${targetAmount}\nRES\t${targetOrder.resourceType}\nORDER\t${targetOrder.id}\nROOM\t${targetOrder.roomName}\nFROM\t${this.name}`)
+        }
+    }
 }
 
 //      //      //      //      //      //      //      //      //      //      //      //
@@ -1025,6 +1061,84 @@ Room.prototype.addRoadFromPath = function(pathStr, placeOnLast = false) {
         }
         this.addStructure(path[i], STRUCTURE_ROAD, this.RCL, PRIORITY_BY_STRUCTURE[STRUCTURE_ROAD] + 1*(path.length-i)/path.length)
     }
+}
+
+//      //      //      //      //      //      //      //      //      //      //      //
+
+//      //      //      //      //      //      //      //      //      //      //      //
+
+Room.prototype.runReactions = function() {
+
+}
+
+//      //      //      //      //      //      //      //      //      //      //      //
+
+Room.prototype.invokeReaction = function() {
+    if (_.keys(this.memory).length == 0) {
+        this.setup()
+        return
+    }
+    
+    if (!this.memory.reactions || !this.memory.reactions.length) {
+        return false
+    }
+    
+    let [[reaction, scope]] = this.memory.reactions
+    
+    let method = `run${reaction}`
+    
+    if (!this[method]) {
+        return false
+    }
+    
+    this[method](scope)
+    return true
+}
+
+Room.prototype.getReaction = function(defaultReaction = 'NONE') {
+    if (!this.memory.reactions) {
+        return defaultReaction
+    }
+    
+    return this.memory.reactions[0][0] || defaultReaction
+}
+
+Room.prototype.setReaction = function(reaction, scope = {}) {
+    if (!this.memory.reactions) {
+        this.memory.reactions = []
+    }
+    
+    let method = `run${reaction}`
+    
+    if (!this[method]) {
+        throw new Error(`Failure to add ${method} to ${this}, No such reaction`)
+    }
+    
+    this.memory.reactions[0] = [reaction, scope]
+    return reaction
+}
+
+Room.prototype.pushReaction = function(reaction, scope = {}) {
+    if (!this.memory.reactions) {
+        this.memory.reactions = []
+    }
+    
+    this.memory.reactions.unshift([reaction, scope])
+    return reaction
+}
+
+Room.prototype.popReaction = function() {
+    if (!this.memory.reactions || !this.memory.reactions.length) {
+        return false
+    }
+    
+    if (!this.memory.reactions.length) {
+        this.memory.reactions = undefined
+    }
+}
+
+Room.prototype.clearReactions = function() {
+    this.memory.reactions = []
 }
 
 //      //      //      //      //      //      //      //      //      //      //      //
