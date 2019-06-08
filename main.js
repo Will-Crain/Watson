@@ -3,9 +3,12 @@
 require('require')
 
 module.exports.loop = function() {
-    let orders = false
+    global.ORDERS = false
     if (Game.cpu.bucket > 1e3) {
-        let orders = Game.market.getAllOrders()
+        ORDERS = Game.market.getAllOrders()
+    }
+    else {
+        ORDERS = false
     }
 
     if (!_.has(Memory, 'Blueprints')) {
@@ -17,14 +20,6 @@ module.exports.loop = function() {
         if (_.isUndefined(Game.rooms[i].controller) || !Game.rooms[i].controller.my) {
             continue
         }
-        
-        // for (let v in Game.rooms[i].memory.Creeps) {
-        //     if (Game.rooms[i].memory.Creeps[v]) {
-        //         if (Game.rooms[i].memory.Creeps[v].role == 'MINERAL_HAULER' || Game.rooms[i].memory.Creeps[v].role == 'MINERAL_MINER') {
-        //             Game.rooms[i].memory.Creeps[v] = undefined
-        //         }
-        //     }
-        // }
         
         if (_.isUndefined(Game.rooms[i].memory.conLevel)) {
             Game.rooms[i].setup()
@@ -58,9 +53,18 @@ module.exports.loop = function() {
             console.log(`${e.name}\n${e.message}\n${e.stack}`)
         }
     }
-    
-    
-    
+
+    for (let i in Game.powerCreeps) {
+        try {
+            Game.powerCreeps[i].memory.recursionCount = 0
+            Game.powerCreeps[i].invokeState()
+        }
+        catch(e) {
+            // Game.creeps[i].popState()
+            console.log(`${e.name}\n${e.message}\n${e.stack}`)
+        }
+    }
+
     if (_.isUndefined(Memory.cpuUsage)) {
         Memory.cpuUsage = []
     }
