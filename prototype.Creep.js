@@ -38,7 +38,7 @@ Creep.prototype.runMoveTo = function(scope) {
 					this.popState()
 				}
 				else {
-					this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps})
+					this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps, maxRooms: 1})
 				}
 			}
 		}
