@@ -24,6 +24,8 @@ global.DESIRED_RESOURCES = {
 	power:				50000
 }
 
+global.CREDIT_THRESHOLD = 700000
+
 global.BODY_ORDER = ['tough', 'move', 'carry', 'work', 'ranged_attack', 'attack', 'claim', 'heal']
 
 global.RECURSION_DEPTH = 5
@@ -75,7 +77,8 @@ global.PRIORITY_BY_ROLE = {
 	MINERAL_MINER:		3,
 	HELPER:				4,
 	SCIENTIST:          2,
-	MANAGER:			1
+	MANAGER:			1,
+	FORTIFIER:			3
 }
 
 global.PRIORITY_BY_STRUCTURE = {
@@ -115,8 +118,8 @@ global.REPAIR_THRESHOLD_BY_STRUCTURE = {
 }
 
 global.FORTIFY_THRESHOLD_BY_RCL = {
-	4:				100e3,
-	5:				1e6,
+	4:				10e3,
+	5:				100e3,
 	6:				1e6,
 	7:				1e6,
 	8:				100e6
@@ -166,6 +169,7 @@ global.BODIES = {
 
 	// Repairs things
 	REPAIRER:			[MOVE, CARRY, MOVE, WORK, MOVE, CARRY, MOVE, CARRY, MOVE, WORK, MOVE, CARRY, MOVE, CARRY, MOVE, WORK, MOVE, CARRY, MOVE, CARRY, MOVE, WORK, MOVE, CARRY, MOVE, CARRY, MOVE, WORK, MOVE, CARRY],
+	FORTIFIER:			[MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK],
 
 	// Builds things
 	BUILDER:			[MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK]
@@ -173,6 +177,17 @@ global.BODIES = {
 
 global.SELL_PRICES = {
 	energy:				0.025,
+	O:					0.090,
+	H:					0.100,
+	Z:					0.070,
+	K:					0.070,
+	U:					0.055,
+	L:					0.075,
+	X:					0.120
+}
+
+global.BUY_PRICES = {
+	energy:				0.02,
 	O:					0.090,
 	H:					0.100,
 	Z:					0.070,
