@@ -398,7 +398,7 @@ Creep.prototype.runFillExtensions = function(scope) {
 	
 }
 
-Crep.prototype.runFortify = function(scope) {
+Creep.prototype.runFortify = function(scope) {
 	let {posStr} = scope
 	let homeRoom = Game.rooms[this.memory.homeRoom]
 
