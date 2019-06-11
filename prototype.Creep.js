@@ -398,6 +398,39 @@ Creep.prototype.runFillExtensions = function(scope) {
 	
 }
 
+Crep.prototype.runFortify = function(scope) {
+	let {posStr} = scope
+	let homeRoom = Game.rooms[this.memory.homeRoom]
+
+	if (_.sum(this.carry) == 0) {
+		let pickUp = homeRoom.getTake(RESOURCE_ENERGY)
+		if (pickUp == false) {
+			this.popState()
+		}
+		else {
+			this.pushState('PickUp', {posStr: pickUp})
+		}
+	}
+	else {
+		let posObj = RoomPosition.parse(posStr)
+		let struct = _.find(posObj.lookFor(LOOK_STRUCTURES), s => s.hits < s.hitMax)
+		if (_.isUndefined(struct)) {
+			this.popState()
+		}
+		else {
+			if (!this.pos.inRangeTo(posObj, 3)) {
+				this.pushState('MoveTo', {posStr: posStr, range: 2})
+			}
+			else {
+				this.repair(struct)
+				if (this.getRepairPower >= this.carry.energy) {
+					this.popState()
+				}
+			}
+		}
+	}
+}
+
 Creep.prototype.runRepair = function(scope) {
 	let {posStr} = scope
 	let homeRoom = Game.rooms[this.memory.homeRoom]
@@ -507,8 +540,18 @@ Creep.prototype.runFindRepair = function(scope) {
 				this.pushState('FindBuild', {})
 			}
 			else {
-				let conPos = RoomPosition.serialize(this.room.controller.pos)
-				this.pushState('Upgrade', {posStr:conPos, cont: false})
+				let canFortify = ['wall', 'rampart']
+				let toFortify = homeRoom.find(FIND_STRUCTURES, {filter: s => canFortify.includes(s.structureType) && s.hits < FORTIFY_THRESHOLD_BY_RCL[homeRoom.controller.level]*0.98})
+
+				if (toFortify.length > 0) {
+					let target = _.min(toFortify, s => s.hits/FORTIFY_THRESHOLD_BY_RCL[homeRoom.controller.level])
+					let posStr = RoomPosition.serialize(target.pos)
+					this.pushState('Fortify', {posStr: posStr})
+				}
+				else {
+					let conPos = RoomPosition.serialize(this.room.controller.pos)
+					this.pushState('Upgrade', {posStr:conPos, cont: false})
+				}
 			}
 		}
 		else {
