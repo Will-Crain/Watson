@@ -131,6 +131,7 @@ PowerCreep.prototype.runOperate = function(scope) {
     
     if (_.sum(this.carry) >= this.carryCapacity) {
         let toStore = this.room.getStore(RESOURCE_OPS)
+        this.pushState('AvoidStructures', {})
         this.pushState('Deliver', {posStr: toStore, res: RESOURCE_OPS})
     }
 }
