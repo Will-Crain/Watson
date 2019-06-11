@@ -72,7 +72,7 @@ Room.prototype.populateMatrix = function() {
 
     let pathTo = {
         2:  [this.controller.pos],
-        1:  [..._.map(this.find(FIND_SOURCES), s => s.pos)]
+        1:  [..._.map(this.find(FIND_SOURCES), s => s.pos), ..._.map(this.find(FIND_MINERALS), s => s.pos)]
     }
     
     for (let i in Memory.Blueprints.Bunker) {
@@ -153,6 +153,10 @@ Room.prototype.populateMatrix = function() {
             }
         }
     }
+
+    let mineralSite = _.first(this.find(FIND_MINERALS))
+    grid.setStructure(mineralSite.pos.x, mineralSite.pos.y, STRUCTURE_EXTRACTOR)
+    grid.setRCL(mineralSite.pos.x, mineralSite.pos.y, 6)
 
     let adjController = this.controller.pos.getAdjacent()
     for (let i in adjController) {
