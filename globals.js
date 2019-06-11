@@ -114,6 +114,14 @@ global.REPAIR_THRESHOLD_BY_STRUCTURE = {
     'nuker':        0.95
 }
 
+global.FORTIFY_THRESHOLD_BY_RCL = {
+	4:				100e3,
+	5:				1e6,
+	6:				1e6,
+	7:				1e6,
+	8:				100e6
+}
+
 global.MAX_STACK_LENGTH = 100
 
 global.BODIES = {

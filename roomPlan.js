@@ -2,9 +2,7 @@
 
 Room.prototype.generateMatrix = function() {
     let grid = new RoomGrid()
-
     let terrain = this.getTerrain()
-    let rName = this.name
 
     let pathTo = {
         2:  [this.controller.pos],
@@ -74,7 +72,7 @@ Room.prototype.populateMatrix = function() {
 
     let pathTo = {
         2:  [this.controller.pos],
-        1: [..._.map(this.find(FIND_SOURCES), s => s.pos)]
+        1:  [..._.map(this.find(FIND_SOURCES), s => s.pos)]
     }
     
     for (let i in Memory.Blueprints.Bunker) {
@@ -83,6 +81,7 @@ Room.prototype.populateMatrix = function() {
             let dy = Number(v.substr(3, 3))
 
             grid.setStructure(posObj.x+dx, posObj.y+dy, Memory.Blueprints.Bunker[i][v])
+            grid.setRampart(posObj.x+dx, posObj.y+dy, 20)
             grid.setRCL(posObj.x+dx, posObj.y+dy, i)
 
             if (Memory.Blueprints.Bunker[i][v] == STRUCTURE_ROAD) {
@@ -153,6 +152,12 @@ Room.prototype.populateMatrix = function() {
                 }
             }
         }
+    }
+
+    let adjController = this.controller.pos.getAdjacent()
+    for (let i in adjController) {
+        let targetPos = RoomPosition.parse(adjController[i])
+        grid.setRampart(targetPos.x, targetPos.y, 10)
     }
 
     Memory.RoomCache[this.name] = {data: grid.serialize(), structures: grid.outStructures(), priority: grid.outPriority(), RCL: grid.outRCL()}
