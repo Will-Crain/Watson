@@ -70,7 +70,7 @@
 
 			for (let i in this.ramparts) {
 				let x = Math.floor(i/50)
-				let y = Number(i) = Number(x*50)
+				let y = Number(i) - Number(x*50)
 
 				let newPos = new RoomPosition(x, y, roomName)
 				let posStr = RoomPosition.serialize(newPos)
