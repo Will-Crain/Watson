@@ -49,11 +49,19 @@ Room.prototype.getAverageRampart = function() {
 	let ramparts = this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART})
 	let sum = 0
 	let count = 0
+	let min = 300e9
+	let max = 0
 
 	for (let i in ramparts) {
 		sum += ramparts[i].hits
 		count += 1
+		if (ramparts[i].hits < min) {
+			min = ramparts[i].hits
+		}
+		if (ramparts[i].hits > max) {
+			max = ramparts[i].hits
+		}
 	}
 
-	console.log((sum/count).toFixed(2))
+	console.log(`AVG:\t${(sum/count).toFixed(2)}\nMIN:\t${min}\nMAX\t${max}`)
 }
