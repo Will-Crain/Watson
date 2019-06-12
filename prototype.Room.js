@@ -829,7 +829,15 @@ Room.prototype.fireTowers = function() {
     if (hostileCreeps.length == 0) {
         let alliedCreeps = this.find(FIND_MY_CREEPS, {filter: s => s.hits < s.hitsMax})
         if (alliedCreeps.length == 0) {
-            return
+            let ramparts = this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART && s.hits < 100})
+            if (ramparts.length == 0) {
+                return
+            }
+            let towers = this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_TOWER})
+
+            for (let i in towers) {
+                towers[i].repair(_.first(ramparts))
+            }
         }
 
         let towers = this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_TOWER})
@@ -847,7 +855,7 @@ Room.prototype.fireTowers = function() {
     }
 
     for (let i in towers) {
-        towers[i].attack(_.first(hostileCreeps))
+        towers[i].attack(_.first(targets))
     }
 }
 
@@ -968,10 +976,6 @@ Room.prototype.runMarket = function() {
         return false
     }
 
-    if (credits < creditThreshold) {
-        return false
-    }
-
     if (_.isUndefined(this.terminal)) {
         return false
     }
@@ -1013,7 +1017,37 @@ Room.prototype.runMarket = function() {
             }
 
             let deal = Game.market.deal(targetOrder.id, targetAmount, this.name)
-            console.log(`SALE\t${deal}\nAMT\t${targetAmount}\nRES\t${targetOrder.resourceType}\nORDER\t${targetOrder.id}\nROOM\t${targetOrder.roomName}\nFROM\t${this.name}`)
+            console.log(`SELL\t${deal}\nAMT\t${targetAmount}\nRES\t${targetOrder.resourceType}\nORDER\t${targetOrder.id}\nROOM\t${targetOrder.roomName}\nFROM\t${this.name}`)
+        }
+    }
+
+    if (_.keys(deficit).length > 0) {
+        if (credits < CREDIT_THRESHOLD) {
+            return false
+        }
+
+        for (let i in deficit) {
+            if (i != 'energy') {
+                continue
+            }
+
+            let targetOrders = _.filter(ORDERS, s => s.type == ORDER_SELL && s.resourceType == i && s.price <= BUY_PRICES[i]*1.25 && Game.market.calcTransactionCost(1e5, this.name, s.roomName)/1e5 <= 0.7)
+            let targetOrder = _.min(targetOrders, s => s = s.price)
+
+            if (_.isUndefined(targetOrder) || _.isNull(targetOrder) || !targetOrder || targetOrder == -Infinity) {
+                continue
+            }
+
+            let dp = 1e5
+            let energyRatio = Game.market.calcTransactionCost(dp, this.name, targetOrder.roomName)/dp
+            let targetAmount = Math.min(deficit[i], Math.ceil(this.terminal.store[RESOURCE_ENERGY]/energyRatio), targetOrder.amount)
+
+            if (targetAmount == 0) {
+                continue
+            }
+
+            let deal = Game.market.deal(targetOrder.id, targetAmount, this.name)
+            console.log(`BUY\t${deal}\nAMT\t${targetAmount}\nRES\t${targetOrder.resourceType}\nORDER\t${targetOrder.id}\nROOM\t${targetOrder.roomName}\nFROM\t${this.name}`)
         }
     }
 }
