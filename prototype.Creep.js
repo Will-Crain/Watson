@@ -413,7 +413,8 @@ Creep.prototype.runRepair = function(scope) {
 	}
 	else {
 		let posObj = RoomPosition.parse(posStr)
-		let struct = _.find(posObj.lookFor(LOOK_STRUCTURES), s => this.getRepairPower() <= (s.hitsMax - s.hits))
+		let noRepair = ['rampart', 'constructedWall']
+		let struct = _.find(posObj.lookFor(LOOK_STRUCTURES), s => !noRepair.includes(s.structureType) && this.getRepairPower() <= (s.hitsMax - s.hits))
 		if (_.isUndefined(struct)) {
 			this.popState()
 		}
