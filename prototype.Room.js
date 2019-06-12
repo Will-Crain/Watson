@@ -994,8 +994,8 @@ Room.prototype.runMarket = function() {
     }
 
     for (let i in this.terminal.store) {
-        if ((MAX_RESOURCES[STRUCTURE_TERMINAL][i] || 0) < this.terminal.store[i]) {
-            surplus[i] = this.terminal.store[i] - (MAX_RESOURCES[STRUCTURE_TERMINAL][i] || 0)
+        if ((MIN_RESOURCES[STRUCTURE_TERMINAL][i] || 0) < this.terminal.store[i]) {
+            surplus[i] = this.terminal.store[i] - (MIN_RESOURCES[STRUCTURE_TERMINAL][i] || 0)
         }
     }
 
@@ -1012,7 +1012,7 @@ Room.prototype.runMarket = function() {
             let energyRatio = Game.market.calcTransactionCost(dp, this.name, targetOrder.roomName)/dp
             let targetAmount = Math.min(surplus[i], Math.ceil(this.terminal.store[RESOURCE_ENERGY]/energyRatio), targetOrder.amount)
 
-            if (targetAmount == 0) {
+            if (targetAmount < 100) {
                 continue
             }
 
