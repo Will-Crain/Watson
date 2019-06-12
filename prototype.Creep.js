@@ -510,15 +510,15 @@ Creep.prototype.runFindRepair = function(scope) {
 				let canFortify = ['construtedWall', 'rampart']
 				let toFortify = homeRoom.find(FIND_STRUCTURES, {filter: s => canFortify.includes(s.structureType) && s.hits < FORTIFY_THRESHOLD_BY_RCL[homeRoom.controller.level]*0.98})
 
-				if (toFortify.length > 0) {
-					let target = _.min(toFortify, s => s.hits/FORTIFY_THRESHOLD_BY_RCL[homeRoom.controller.level])
-					let posStr = RoomPosition.serialize(target.pos)
-					this.pushState('Fortify', {posStr: posStr})
-				}
-				else {
+				// if (toFortify.length > 0) {
+				// 	let target = _.min(toFortify, s => s.hits/FORTIFY_THRESHOLD_BY_RCL[homeRoom.controller.level])
+				// 	let posStr = RoomPosition.serialize(target.pos)
+				// 	this.pushState('Fortify', {posStr: posStr})
+				// }
+				// else {
 					let conPos = RoomPosition.serialize(this.room.controller.pos)
 					this.pushState('Upgrade', {posStr:conPos, cont: false})
-				}
+				// }
 			}
 		}
 		else {
@@ -648,7 +648,7 @@ Creep.prototype.runFortify = function(scope) {
 			}
 			else {
 				this.repair(target)
-				if (this.carry.energy == 0) {
+				if (_.sum(this.carry) - this.getRepairCost() < this.getRepairCost()) {
 					this.popState()
 				}
 			}
@@ -667,7 +667,7 @@ Creep.prototype.runFindFortify = function(scope) {
 		// this.pushState('FindRepair')
 	}
 
-	let target = _.min(targets, s => s.hits)
+	let target = _.min(targets, s => s = s.hits)
 	this.pushState('Fortify', {posStr: RoomPosition.serialize(target.pos)})
 }
 
@@ -1394,4 +1394,8 @@ Creep.prototype.getHealing = function() {
 
 Creep.prototype.getRepairPower = function() {
 	return _.filter(this.body, s => s.type == WORK && s.hits > 0).length * REPAIR_POWER
+}
+
+Creep.prototype.getRepairCost = function() {
+	return _.sum(this.body, s => s.type == WORK)
 }

@@ -115,6 +115,18 @@ PowerCreep.prototype.runOperate = function(scope) {
         return
     }
 
+    if (this.powers[PWR_OPERATE_EXTENSION] && this.powers[PWR_OPERATE_EXTENSION].cooldown == 0) {
+        if (homeRoom.energyAvailable < homeRoom.energyCapacityAvailable) {
+            if (this.pos.inRangeTo(homeRoom.terminal), 3) {
+                this.usePower(PWR_OPERATE_EXTENSION, homeRoom.terminal)
+                this.pushState('AvoidStructures')
+            }
+            else {
+                this.pushState('MoveTo', {posStr: RoomPosition.serialize(homeRoom.terminal.pos), range: 3})
+            }
+        }
+    }
+
     if (this.powers[PWR_GENERATE_OPS] && this.powers[PWR_GENERATE_OPS].cooldown == 0) {
         this.usePower(PWR_GENERATE_OPS)
     }
@@ -146,7 +158,7 @@ PowerCreep.prototype.runAvoidStructures = function(scope) {
 
     if (_.isUndefined(this.memory.toPos)) {
         let structs = this.room.find(FIND_STRUCTURES)
-        let structGoal = _.map(structs, s => s = {pos: s.pos, range: 1})
+        let structGoal = _.map(structs, s => s = {pos: s.pos, range: 2})
         let pFind = PathFinder.search(this.pos, structGoal, {flee: true})
         
         if (pFind.path.length == 0) {

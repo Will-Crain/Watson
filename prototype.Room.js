@@ -829,7 +829,7 @@ Room.prototype.fireTowers = function() {
     if (hostileCreeps.length == 0) {
         let alliedCreeps = this.find(FIND_MY_CREEPS, {filter: s => s.hits < s.hitsMax})
         if (alliedCreeps.length == 0) {
-            let ramparts = this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART && s.hits < 100})
+            let ramparts = this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART && s.hits < 300})
             if (ramparts.length == 0) {
                 return
             }
@@ -1055,6 +1055,7 @@ Room.prototype.runMarket = function() {
 //      //      //      //      //      //      //      //      //      //      //      //
 
 //      //      //      //      //      //      //      //      //      //      //      //
+
 Room.prototype.getStructures = function(newPos, toStore, range = 4) {
     let newStructs = newPos.findInRange(FIND_STRUCTURES, range)
 
