@@ -44,3 +44,16 @@ global.PROFILE = function() {
     let numRooms = _.sum(Game.rooms, s => s.controller && s.controller.my)
     console.log(`CPU:\t${avgCPU.toFixed(2)} CPU over the last ${Memory.cpuUsage.length} ticks\n\t${ (avgCPU/numCreeps).toFixed(2)} CPU per Creep\n\t${ (avgCPU/numRooms).toFixed(2)} CPU per Room`)
 }
+
+Room.prototype.getAverageRampart = function() {
+	let ramparts = this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART})
+	let sum = 0
+	let count = 0
+
+	for (let i in ramparts) {
+		sum += ramparts[i].hits
+		count += 1
+	}
+
+	console.log((sum/count).toFixed(2))
+}
