@@ -861,7 +861,6 @@ Room.prototype.fireTowers = function() {
 
 
 Room.prototype.updateSourcePathes = function() {
-    let storagePos = RoomPosition.serialize(this.storage.pos)
     for (let i in this.memory.sources) {
         let newPath = PathFinder.search(this.storage.pos, RoomPosition.parse(this.memory.sources[i].container), {ignoreRoads: true, maxRooms: 4, ignoreCreeps: true, range: 0})
 
@@ -1034,7 +1033,7 @@ Room.prototype.runMarket = function() {
             let targetOrders = _.filter(ORDERS, s => s.type == ORDER_SELL && s.resourceType == i && s.price <= BUY_PRICES[i]*1.25 && Game.market.calcTransactionCost(1e5, this.name, s.roomName)/1e5 <= 0.7)
             let targetOrder = _.min(targetOrders, s => s = s.price)
 
-            if (_.isUndefined(targetOrder) || _.isNull(targetOrder) || !targetOrder || targetOrder == -Infinity) {
+            if (_.isUndefined(targetOrder) || _.isNull(targetOrder) || !targetOrder || targetOrder == -Infinity || _.isUndefined(targetOrder.roomName)) {
                 continue
             }
 
@@ -1042,7 +1041,7 @@ Room.prototype.runMarket = function() {
             let energyRatio = Game.market.calcTransactionCost(dp, this.name, targetOrder.roomName)/dp
             let targetAmount = Math.min(deficit[i], Math.ceil(this.terminal.store[RESOURCE_ENERGY]/energyRatio), targetOrder.amount)
 
-            if (targetAmount == 0) {
+            if (targetAmount < 100) {
                 continue
             }
 
