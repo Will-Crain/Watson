@@ -521,7 +521,7 @@ Creep.prototype.runFindRepair = function(scope) {
 			this.pushState('PickUp', {posStr: pickUp})
 		}
 		else {
-			this.pushState('FindBuild', {})
+			this.pushState('FindBuild', {cont: false})
 		}
 	}
 	else {
@@ -539,21 +539,11 @@ Creep.prototype.runFindRepair = function(scope) {
 		if (toRepair.length == 0) {
 			let toBuild = this.room.find(FIND_CONSTRUCTION_SITES)
 			if (toBuild.length > 0) {
-				this.pushState('FindBuild', {})
+				this.pushState('FindBuild', {cont: false})
 			}
 			else {
-				let canFortify = ['construtedWall', 'rampart']
-				let toFortify = homeRoom.find(FIND_STRUCTURES, {filter: s => canFortify.includes(s.structureType) && s.hits < FORTIFY_THRESHOLD_BY_RCL[homeRoom.controller.level]*0.98})
-
-				// if (toFortify.length > 0) {
-				// 	let target = _.min(toFortify, s => s.hits/FORTIFY_THRESHOLD_BY_RCL[homeRoom.controller.level])
-				// 	let posStr = RoomPosition.serialize(target.pos)
-				// 	this.pushState('Fortify', {posStr: posStr})
-				// }
-				// else {
-					let conPos = RoomPosition.serialize(this.room.controller.pos)
-					this.pushState('Upgrade', {posStr:conPos, cont: false})
-				// }
+				let conPos = RoomPosition.serialize(this.room.controller.pos)
+				this.pushState('Upgrade', {posStr:conPos, cont: false})
 			}
 		}
 		else {
