@@ -1,14 +1,14 @@
 'use strict'
 
 Creep.prototype.runMoveTo = function(scope) {    
-	let {posStr, range = 1, travel = false, ignoreCreeps = false} = scope
+	let {posStr, range = 1, travel = false, SKCost = 50, ignoreCreeps = false} = scope
 	let posObj = RoomPosition.parse(posStr)
 
 	if (this.room.name !== posObj.roomName) {
 		if (travel == false) {
 			let route = Game.map.findRoute(this.room, posObj.roomName, {routeCallback(rName, frName) {
 				if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'SOURCE_KEEPER') {
-					return 50
+					return SKCost
 				}
 				else {
 					return 1
@@ -20,7 +20,7 @@ Creep.prototype.runMoveTo = function(scope) {
 				this.popState()
 			}
 			else {
-				this.pushState('MoveTo', {range: 2, posStr: RoomPosition.serialize(roomPos), travel: true})
+				this.pushState('MoveTo', {range: 20, posStr: RoomPosition.serialize(roomPos), travel: true})
 			}
 		}
 		else {
@@ -43,6 +43,40 @@ Creep.prototype.runMoveTo = function(scope) {
 			}
 		}
 	}
+}
+Creep.prototype.runTravelTo = function(scope) {
+    let {roomName} = scope
+
+    if (this.pos.isOnEdge()) {
+        this.moveTo(new RoomPosition(24, 24, this.room.name))
+        return
+    }
+
+    if (this.room.name !== roomName) {
+        if (_.isUndefined(this.memory.targetRoom)) {
+            let route = Game.map.findRoute(this.room.name, roomName)
+            this.memory.targetRoom = _.first(route).room
+        }
+        
+        if (this.room.name !== this.memory.targetRoom) {
+            if (_.isUndefined(this.memory.targetSpot)) {
+                let targetExit = this.room.findExitTo(this.memory.targetRoom)
+                let targetSpots = this.room.find(targetExit)
+                this.memory.targetSpot = RoomPosition.serialize(this.pos.findClosestByPath(targetSpots))
+            }
+            
+            this.moveTo(RoomPosition.parse(this.memory.targetSpot))
+        }
+        else {
+            this.memory.targetSpot = undefined
+            this.memory.targetRoom = undefined
+        }
+
+    }
+    else {
+        this.popState()
+    }
+
 }
 
 Creep.prototype.runManage = function(scope) {
@@ -1100,18 +1134,7 @@ Creep.prototype.runAttackMove = function(scope) {
 Creep.prototype.runBootstrap = function(scope) {
 	let {roomName} = scope
 	if (this.room.name !== roomName) {
-		let route = Game.map.findRoute(this.room, roomName, {routeCallback(rName, frName) {
-			if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'CENTER') {
-				return 50
-			}
-			else {
-				return 1
-			}
-		}})
-		let nextRoom = _.first(route).room
-		let roomPos = new RoomPosition(24, 24, nextRoom)
-
-		this.pushState('MoveTo', {posStr: RoomPosition.serialize(roomPos), exitOnRoom: true})
+		this.pushState('TravelTo', {roomName: roomName})
 	}
 	else {
 		if (_.sum(this.carry) == 0) {

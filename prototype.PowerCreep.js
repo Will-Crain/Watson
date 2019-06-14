@@ -58,18 +58,25 @@ PowerCreep.prototype.runTravelTo = function(scope) {
                 let targetSpots = this.room.find(targetExit)
                 this.memory.targetSpot = RoomPosition.serialize(this.pos.findClosestByPath(targetSpots))
             }
-
-            this.moveTo(RoomPosition.parse(this.memory.targetSpot, {ignoreRoads: true}))
-
+            this.moveTo(RoomPosition.parse(this.memory.targetSpot,))
         }
         else {
+            let targetPos = new RoomPosition(24, 24, this.memory.targetRoom)
+            this.moveTo(targetPos)
+            
             this.memory.targetSpot = undefined
             this.memory.targetRoom = undefined
         }
 
     }
     else {
-        this.popState()
+        if (this.pos.isNearExit()) {
+            let targetPos = new RoomPosition(24, 24, roomName)
+            this.moveTo(targetPos)
+        }
+        else {
+            this.popState()
+        }
     }
 
 }
