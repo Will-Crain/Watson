@@ -68,15 +68,15 @@
 				Game.rooms[roomName].addStructure(posStr, this.structures[i], this.RCL[i], this.priority[i])
 			}
 
-			for (let i in this.ramparts) {
-				let x = Math.floor(i/50)
-				let y = Number(i) - Number(x*50)
+			// for (let i in this.ramparts) {
+			// 	let x = Math.floor(i/50)
+			// 	let y = Number(i) - Number(x*50)
 
-				let newPos = new RoomPosition(x, y, roomName)
-				let posStr = RoomPosition.serialize(newPos)
+			// 	let newPos = new RoomPosition(x, y, roomName)
+			// 	let posStr = RoomPosition.serialize(newPos)
 
-				Game.rooms[roomName].addStructure(posStr, STRUCTURE_RAMPART, 6, this.ramparts[i])
-			}
+			// 	Game.rooms[roomName].addStructure(posStr, STRUCTURE_RAMPART, 6, this.ramparts[i])
+			// }
 
 		}
 
