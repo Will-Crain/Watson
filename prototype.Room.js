@@ -59,7 +59,6 @@ Room.prototype.runRCL1 = function(scope) {
         this.memory.eventFlags[1] = {}
         this.memory.eventFlags[1]['01CONTAINER'] = false
 
-
         let sources = this.find(FIND_SOURCES)
 
         for (let i in sources) {
@@ -114,7 +113,6 @@ Room.prototype.runRCL2 = function(scope) {
         
         this.addCreep('MOBILE_UPGRADER', [['Upgrade', {posStr: conPos, cont: true}]])
         this.addCreep('EXTENSIONER', [['FillExtensions', {path: false}]])
-        this.addFromBlueprint(this.memory.Bunker, Memory.Blueprints.Bunker, this.controller.level)
         
         this.memory.conLevel = this.controller.level
     }
@@ -171,8 +169,6 @@ Room.prototype.runRCL3 = function(scope) {
         this.memory.eventFlags[3]['02EXTENSIONS'] = false
 
         this.addCreep('BUILDER', [['FindBuild', {}]])
-
-        this.addFromBlueprint(this.memory.Bunker, Memory.Blueprints.Bunker, this.controller.level)
         
         this.memory.conLevel = this.controller.level
     }
@@ -216,8 +212,6 @@ Room.prototype.runRCL4 = function(scope) {
         this.memory.eventFlags[4] = {}
         this.memory.eventFlags[4]['01STORAGE'] = false
         this.memory.eventFlags[4]['02EXTENSIONS'] = false
-
-        this.addFromBlueprint(this.memory.Bunker, Memory.Blueprints.Bunker, this.controller.level)
         
         this.memory.conLevel = this.controller.level
     }
@@ -267,7 +261,6 @@ Room.prototype.runRCL5 = function(scope) {
 
     // Initial setup
     if (this.memory.conLevel < this.controller.level && this.controller.level == 5) {
-        this.addFromBlueprint(this.memory.Bunker, Memory.Blueprints.Bunker, this.controller.level)
         this.memory.conLevel = this.controller.level
     }
     
@@ -285,7 +278,6 @@ Room.prototype.runRCL6 = function(scope) {
 
     // Initial setup
     if (this.memory.conLevel < this.controller.level && this.controller.level == 6) {
-        this.addFromBlueprint(this.memory.Bunker, Memory.Blueprints.Bunker, this.controller.level)
         this.memory.conLevel = this.controller.level
     }
     
@@ -303,7 +295,6 @@ Room.prototype.runRCL7 = function(scope) {
 
     // Initial setup
     if (this.memory.conLevel < this.controller.level && this.controller.level == 7) {
-        this.addFromBlueprint(this.memory.Bunker, Memory.Blueprints.Bunker, this.controller.level)
         this.memory.conLevel = this.controller.level
     }
     
@@ -321,7 +312,6 @@ Room.prototype.runRCL8 = function(scope) {
 
     // Initial setup
     if (this.memory.conLevel < this.controller.level && this.controller.level == 8) {
-        this.addFromBlueprint(this.memory.Bunker, Memory.Blueprints.Bunker, this.controller.level)
         this.memory.conLevel = this.controller.level
     }
 
