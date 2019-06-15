@@ -727,12 +727,22 @@ Creep.prototype.runHarvest = function(scope) {
 		}
 	}
 	else {
-		
-		
-		if (!this.pos.inRangeTo(posObj, 1)) {
-			this.pushState('MoveTo', {posStr: posStr})
+		if (this.pos.getRangeTo(posObj) == 2) {
+			let creepObj = _.find(posObj.findInRange(FIND_CREEPS, 1), s => s.memory.homeRoom != this.memory.homeRoom)
+			if (_.isUndefined(creepObj)) {
+				this.say(`0${this.moveTo(posObj)}`)
+			}
+			else {
+				let dir = this.pos.getDirectionTo(posObj)
+				creepObj.moveTo(this)
+				this.move(dir)
+				creepObj.move(REVERSE_DIRECTION[dir])
+			}
 		}
-		else {
+		else if (this.pos.getRangeTo(posObj) > 2) {
+			this.pushState('MoveTo', {posStr: posStr, range: 2})
+		}
+		else if (this.pos.getRangeTo(posObj) < 2) {
 			let targObj = posObj.lookFor(LOOK_SOURCES)[0]
 			let harvestAction = this.harvest(targObj)
 			
