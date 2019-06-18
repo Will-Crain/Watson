@@ -15,6 +15,12 @@ module.exports.loop = function() {
         Memory.Blueprints = {Bunker: JSON.parse(Bunker)}
     }
     
+    for (let i in Memory.rooms) {
+        if (_.isUndefined(Game.rooms[i].controller) || !Game.rooms[i].controller.my) {
+            Memory.rooms[i] = undefined
+        }
+    }
+
     for (let i in Game.rooms) {
         
         if (_.isUndefined(Game.rooms[i].controller) || !Game.rooms[i].controller.my) {
