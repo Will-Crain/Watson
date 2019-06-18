@@ -51,7 +51,6 @@ Room.prototype.operate = function() {
             continue
         }
 
-        // Check for things to build
         let conSites = targetRoom.find(FIND_MY_CONSTRUCTION_SITES)
         if (conSites.length == 0) {
             continue
@@ -60,8 +59,14 @@ Room.prototype.operate = function() {
         if (!_.any(this.memory.Creeps, s => s.role == 'BUILDER' && _.last(s.baseStack)[1].roomName == targetRoom.name)) {
             this.addCreep('BUILDER', [['FindBuild', {roomName: targetRoom.name}]])
         }
-
-        // Check for things to repair
+    }
+    
+    // Check for things to repair
+    for (let i in this.memory.mineRooms) {
+        let targetRoom = Game.rooms[i]
+        if (_.isUndefined(targetRoom)) {
+            continue
+        }
         let decayStructures = ['rampart', 'road']
         let toRepair = targetRoom.find(FIND_STRUCTURES, {filter: s => decayStructures.includes(s.structureType) && (s.hits/s.hitsMax) <= REPAIR_THRESHOLD_BY_STRUCTURE[s.structureType]})
         if (toRepair.length == 0) {
@@ -71,7 +76,6 @@ Room.prototype.operate = function() {
         if (!_.any(this.memory.Creeps, s => s.role == 'REPAIRER' && _.last(s.baseStack)[1].roomName == targetRoom.name)) {
             this.addCreep('REPAIRER', [['FindRepair', {roomName: targetRoom.name}]])
         }
-
     }
 
     if (!_.any(this.memory.Creeps, s => s.role == 'BUILDER')) {
