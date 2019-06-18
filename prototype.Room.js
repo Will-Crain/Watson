@@ -2,17 +2,20 @@
 
 Room.prototype.standardRuntime = function() {
     this.operate()
+
     this.checkToSpawn()
     this.checkToBuild()
+
     this.spawnQueue()
     this.buildQueue()
+
     this.fireTowers()
     this.defend()
+
     this.runMarket()
 }
 
 Room.prototype.operate = function() {
-
     // Process power, if it can
     let powerSpawn = _.first(this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_POWER_SPAWN}))
     if (!_.isUndefined(powerSpawn) && powerSpawn.power > 0 && powerSpawn.energy > 50) {
@@ -25,10 +28,10 @@ Room.prototype.operate = function() {
         let mineralObj = mineralPos.lookFor(LOOK_MINERALS)[0]
 
         if (_.isUndefined(mineralObj)) {
-            return
+            break
         }
         if (mineralObj.mineralAmount <= 0) {
-            return
+            break
         }
 
         let targetMiner = _.find(this.memory.Creeps, s => s.role == 'MINERAL_MINER' && _.last(s.baseStack)[1].minePosStr == i)
@@ -38,6 +41,53 @@ Room.prototype.operate = function() {
         }
         if (_.isUndefined(targetHauler)) {
             this.addCreep('MINERAL_HAULER', [['Haul', {res: mineralObj.mineralType, pickUp: this.memory.minerals[i].container, dropOff: _.first(this.memory.storeTo), dist: this.memory.minerals[i].pathLength}]])
+        }
+    }
+
+    // Checks for things to build
+    for (let i in this.memory.mineRooms) {
+        let targetRoom = Game.rooms[i]
+        if (_.isUndefined(targetRoom)) {
+            continue
+        }
+
+        // Check for things to build
+        let conSites = targetRoom.find(FIND_MY_CONSTRUCTION_SITES)
+        if (conSites.length == 0) {
+            continue
+        }
+
+        if (!_.any(this.memory.Creeps, s => s.role == 'BUILDER' && _.last(s.baseStack)[1].roomName == targetRoom.name)) {
+            this.addCreep('BUILDER', [['FindBuild', {roomName: targetRoom.name}]])
+        }
+
+        // Check for things to repair
+        let decayStructures = ['rampart', 'road']
+        let toRepair = targetRoom.find(FIND_STRUCTURES, {filter: s => decayStructures.includes(s.structureType) && (s.hits/s.hitsMax) <= REPAIR_THRESHOLD_BY_STRUCTURE[s.structureType]})
+        if (toRepair.length == 0) {
+            continue
+        }
+
+        if (!_.any(this.memory.Creeps, s => s.role == 'REPAIRER' && _.last(s.baseStack)[1].roomName == targetRoom.name)) {
+            this.addCreep('REPAIRER', [['FindRepair', {roomName: targetRoom.name}]])
+        }
+
+    }
+
+    if (!_.any(this.memory.Creeps, s => s.role == 'BUILDER')) {
+        this.addCreep('BUILDER', [['FindBuild', {}]])
+    }
+
+    // Check for things to repair by room
+    for (let i in this.memory.mineRooms) {
+        let targetRoom = Game.rooms[i]
+        if (_.isUndefined(targetRoom)) {
+            continue
+        }
+
+        let conSites = targetRoom.find(FIND_MY_CONSTRUCTION_SITES)
+        if (conSites.length == 0) {
+
         }
     }
 }
@@ -485,6 +535,7 @@ Room.prototype.spawnQueue = function() {
     }
     let cap = this.energyCapacityAvailable
     
+    // Check for available spawns or empty spawn queue
     if (useableSpawns.length == 0) {
         return
     }
@@ -492,8 +543,9 @@ Room.prototype.spawnQueue = function() {
         return
     }
     
+    // Check for emergency room state
     if (this.memory.queue.length == _.keys(this.memory.Creeps).length) {
-        cap = 300
+        cap = 200
     }
     
     for (let i in this.memory.queue) {
@@ -1037,7 +1089,7 @@ Room.prototype.runMarket = function() {
 
             let dp = 1e5
             let energyRatio = Game.market.calcTransactionCost(dp, this.name, targetOrder.roomName)/dp
-            let targetAmount = Math.min(deficit[i], Math.ceil(this.terminal.store[RESOURCE_ENERGY]/energyRatio), targetOrder.amount)
+            let targetAmount = Math.min(deficit[i], Math.ceil(this.terminal.store[RESOURCE_ENERGY]/energyRatio-1), targetOrder.amount)
 
             if (targetAmount < 100) {
                 continue
