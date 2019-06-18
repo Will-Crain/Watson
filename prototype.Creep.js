@@ -579,13 +579,12 @@ Creep.prototype.runBuild = function(scope) {
 			this.pushState('PickUp', {posStr: getPosStr, res: RESOURCE_ENERGY})
 		}
 		else {
-			let allowed = ['container', 'storage', 'terminal']
-			let container = Game.rooms[this.memory.homeRoom].find(FIND_STRUCTURES, {filter: s => allowed.includes(s.structureType) && s.store.energy > 0})[0]
-			if (_.isUndefined(container)) {
-				this.popState()
+			let takeFrom = Game.rooms[this.memory.homeRoom].getTake(RESOURCE_ENERGY)
+			if (takeFrom == false) {
+				this.pushState('Wait', {until: Game.time+10})
 			}
 			else {
-				this.pushState('PickUp', {posStr: RoomPosition.serialize(container.pos)})
+				this.pushState('PickUp', {posStr: takeFrom})
 			}
 		}
 	}
@@ -906,10 +905,17 @@ Creep.prototype.runPickUp = function(scope) {
 				}
 				else {
 					let st = ['container', 'storage', 'terminal']
-					let inStore = st.includes(posStruct.structureType) ? posStruct.store[res] : posStruct.energy
-					let state = this.withdraw(posStruct, res, Math.min(amt, inStore))
-					if (state == 0 || _.sum(this.carry) == this.carryCapacity || state == -6) {
-						this.popState()
+					if (st.includes(posStruct.structureType)) {
+						let state = this.withdraw(posStruct, res, Math.min(amt, posStruct.store[res]))
+						if (state == 0 || _.sum(this.carry) == this.carryCapacity || state == -6) {
+							this.popState()
+						}
+					}
+					else {
+						let state = this.withdraw(posStruct, res, Math.min(amt, posStruct.energy))
+						if (state == 0 || _.sum(this.carry) == this.carryCapacity || state == -6) {
+							this.popState()
+						}
 					}
 				}
 			}

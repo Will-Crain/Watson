@@ -120,8 +120,8 @@ PowerCreep.prototype.runOperate = function(scope) {
     }
 
     if (this.powers[PWR_OPERATE_EXTENSION] && this.powers[PWR_OPERATE_EXTENSION].cooldown == 0) {
-        if (homeRoom.energyAvailable < homeRoom.energyCapacityAvailable) {
-            if (this.pos.inRangeTo(homeRoom.terminal), 3) {
+        if (homeRoom.energyAvailable < homeRoom.energyCapacityAvailable * 0.75) {
+            if (this.pos.inRangeTo(homeRoom.terminal, 3)) {
                 this.usePower(PWR_OPERATE_EXTENSION, homeRoom.terminal)
                 this.pushState('AvoidStructures')
             }
