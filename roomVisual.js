@@ -1,5 +1,33 @@
 'use strict'
 
+RoomVisual.showVassals = function(targetRoom) {
+  let fVas = Memory.vassals
+
+  let currX = 10
+  let currY = 1
+  let res = []
+
+  for (let vas in fVas) {
+    if (fVas[vas].fromRoom != targetRoom) {
+      continue
+    }
+    res = RoomVisual.drawLineText(targetRoom, currX, currY, vas)
+    currX = res[0]
+    currY = res[1]
+
+    for (let opt in fVas[vas]) {
+      if (fVas[vas][opt] instanceof Object) {
+        continue
+      }
+
+      let outStr = `${opt}\t\t\t\t\t${fVas[vas][opt]}`
+      res = RoomVisual.drawLineText(targetRoom, currX, currY, outStr, 1)
+      currX = res[0]
+      currY = res[1]
+    }
+  }
+}
+
 RoomVisual.drawLineText = function(rName, x, y, text, indents=0, opts = {}) {
     let RV = new RoomVisual(rName)
     opts.font = 0.2
