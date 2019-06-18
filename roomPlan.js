@@ -130,7 +130,6 @@ Room.prototype.populateMatrix = function() {
                     }
                 }
                 else if (i == 2) {
-
                     if (d < path.path.length - 2) {
                         let priority = (PRIORITY_BY_STRUCTURE[STRUCTURE_ROAD] + (1-(d/path.path.length))).toFixed(4)
 
@@ -139,12 +138,12 @@ Room.prototype.populateMatrix = function() {
                         grid.setRCL(path.path[d].x, path.path[d].y, 3)
                         grid.setPriority(path.path[d].x, path.path[d].y, priority)
                     }
-                    else if (d == path.path.length - 2) {
+                    else if (d == path.path.length - 1) {
                         grid.setStructure(path.path[d].x, path.path[d].y, STRUCTURE_CONTAINER)
                         grid.set(path.path[d].x, path.path[d].y, 2)
                         grid.setRCL(path.path[d].x, path.path[d].y, 1)
                     }
-                    else if (d == path.path.length - 1) {
+                    else if (d == path.path.length - 2) {
                         grid.setStructure(path.path[d].x, path.path[d].y, STRUCTURE_LINK)
                         grid.set(path.path[d].x, path.path[d].y, 255)
                         grid.setRCL(path.path[d].x, path.path[d].y, 5)
@@ -155,8 +154,10 @@ Room.prototype.populateMatrix = function() {
     }
 
     let mineralSite = _.first(this.find(FIND_MINERALS))
-    grid.setStructure(mineralSite.pos.x, mineralSite.pos.y, STRUCTURE_EXTRACTOR)
-    grid.setRCL(mineralSite.pos.x, mineralSite.pos.y, 6)
+    if (!_.isUndefined(mineralSite)) {
+        grid.setStructure(mineralSite.pos.x, mineralSite.pos.y, STRUCTURE_EXTRACTOR)
+        grid.setRCL(mineralSite.pos.x, mineralSite.pos.y, 6)
+    }
 
     let adjController = this.controller.pos.getAdjacent()
     for (let i in adjController) {
