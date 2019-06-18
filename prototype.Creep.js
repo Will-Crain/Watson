@@ -551,12 +551,7 @@ Creep.prototype.runFindBuild = function(scope) {
 				this.pushState('NoRespawn', {})
 			}
 
-			let targetBuild = _.max(toBuild, s => homeRoom.memory.structures[RoomPosition.serialize(s.pos) + s.strucureType].priority || PRIORITY_BY_STRUCTURE[s.structureType])
-			if (!_.isFinite(targetBuild)) {
-				console.log(`${this.name} FOUND NOTHING TO BUILD`)
-				return
-			}
-
+			let targetBuild = _.max(toBuild, s => PRIORITY_BY_STRUCTURE[s.structureType])
 			this.pushState('Build', {posStr: RoomPosition.serialize(targetBuild.pos)})
 		}
 	}
