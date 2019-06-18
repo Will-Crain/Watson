@@ -1,7 +1,7 @@
 'use strict'
 
 Creep.prototype.runMoveTo = function(scope) {    
-	let {posStr, range = 1, travel = false, SKCost = 50, ignoreCreeps = false} = scope
+	let {posStr, range = 1, travel = false, ignoreCreeps = false} = scope
 	let posObj = RoomPosition.parse(posStr)
 
 	if (this.room.name !== posObj.roomName) {
@@ -9,18 +9,11 @@ Creep.prototype.runMoveTo = function(scope) {
 	}
 
 	else {
-		if (this.room.name == posObj.roomName) {
-			if (travel == true && !this.pos.isNearExit()) {
-				this.popState()
-			}
-			else {
-				if (this.pos.inRangeTo(posObj, range)) {
-					this.popState()
-				}
-				else {
-					this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps, maxRooms: 1})
-				}
-			}
+		if (this.pos.inRangeTo(posObj, range)) {
+			this.popState()
+		}
+		else {
+			this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps, maxRooms: 1})
 		}
 	}
 }
@@ -517,8 +510,8 @@ Creep.prototype.runFindRepair = function(scope) {
 				this.pushState('NoRespawn', {})
 			}
 
-			let targetRepair = _.min(toRepair, s => s = s.hits/s.hitsMax)
-			if (_.isUndefined(targetRepair)) {
+			let targetRepair = _.min(toRepair, s => s.hits/s.hitsMax)
+			if (_.isUndefined(targetRepair) || Math.abs(targetRepair) == Infinity) {
 				console.log(`${this.name} FOUND NOTHING TO REPAIR`)
 				return
 			}
