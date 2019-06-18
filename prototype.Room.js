@@ -560,7 +560,11 @@ Room.prototype.spawnQueue = function() {
             return true
         }
 
-        let mem = {homeRoom: this.name, stack: _.cloneDeep(this.memory.Creeps[this.memory.queue[i]].baseStack)}
+        if (_.isUndefined(this.memory.queue[i])) {
+            continue
+        }
+
+        let mem = {homeRoom: this.name, stack: this.memory.Creeps[this.memory.queue[i]].baseStack}
         
         let cName = this.memory.queue[i]
         
