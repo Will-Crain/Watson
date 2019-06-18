@@ -553,15 +553,17 @@ Creep.prototype.runFindBuild = function(scope) {
 
 			let targetBuild
 			if (this.room.name == this.memory.homeRoom) {
-				targetBuild = _.max(toBuild, s => PRIORITY_BY_STRUCTURE[s.structureType])
+				targetBuild = _.max(toBuild, s => PRIORITY_BY_STRUCTURE[s.structureType] || 10)
 			}
 			else {
 				targetBuild = this.pos.findClosestByRange(toBuild)
 			}
 
 			if (_.isUndefined(targetBuild) || Math.abs(targetBuild) == Infinity) {
-				console.log(`${this.name}\t${this.room.name}\t${Game.time}\t${targetBuild}`)
+				console.log(`BUILD\t${this.name}\t${this.room.name}\t${Game.time}\t${targetBuild}`)
+				return
 			}
+
 			this.pushState('Build', {posStr: RoomPosition.serialize(targetBuild.pos)})
 		}
 	}
@@ -1246,11 +1248,24 @@ Creep.prototype.runRecycle = function(scope) {
 		let spawnList = this.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_SPAWN})
 		let targetSpawn = this.pos.findClosestByRange(spawnList)
 
-		if (this.pos.inRangeTo(targetSpawn, 1)) {
-			targetSpawn.recycleCreep(this)
+		if (_.sum(this.carry) > 0) {
+			for (let i in _.keys(this.carry)) {
+				let storeTo = this.room.getStore(i)
+				if (storeTo == false) {
+					continue
+				}
+
+				this.pushState('DropOff', {posStr: storeTo})
+			}
 		}
 		else {
-			this.pushState('MoveTo', {posStr: RoomPosition.serialize(targetSpawn.pos)})
+			if (this.pos.inRangeTo(targetSpawn, 1)) {
+				targetSpawn.recycleCreep(this)
+			}
+			else {
+				this.pushState('MoveTo', {posStr: RoomPosition.serialize(targetSpawn.pos)})
+			}
+
 		}
 	}	
 }
