@@ -551,7 +551,17 @@ Creep.prototype.runFindBuild = function(scope) {
 				this.pushState('NoRespawn', {})
 			}
 
-			let targetBuild = _.max(toBuild, s => PRIORITY_BY_STRUCTURE[s.structureType])
+			let targetBuild
+			if (this.room.name == this.memory.homeRoom) {
+				targetBuild = _.max(toBuild, s => PRIORITY_BY_STRUCTURE[s.structureType])
+			}
+			else {
+				targetBuild = this.pos.findClosestByRange(toBuild)
+			}
+
+			if (_.isUndefined(targetBuild) || Math.abs(targetBuild) == Infinity) {
+				console.log(`${this.name}\t${this.room.name}\t${Game.time}\t${targetBuild}`)
+			}
 			this.pushState('Build', {posStr: RoomPosition.serialize(targetBuild.pos)})
 		}
 	}
@@ -644,10 +654,12 @@ Creep.prototype.runFindFortify = function(scope) {
 	if (targets.length == 0) {
 		this.pushState('Wait', {until: Game.time+50})
 		this.pushState('AvoidStructures', {})
-		// this.pushState('FindRepair')
 	}
 
 	let target = _.min(targets, s => s = s.hits)
+	if (Math.abs(target) == Infinity) {
+		console.log(`${this.name}\t${this.room.name}\t${Game.time}\t${target}`)
+	}
 	this.pushState('Fortify', {posStr: RoomPosition.serialize(target.pos)})
 }
 
