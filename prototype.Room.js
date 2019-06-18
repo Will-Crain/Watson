@@ -1019,7 +1019,6 @@ Room.prototype.updateHaulers = function(roads = false) {
 
 Room.prototype.runMarket = function() {
     let credits = Game.market.credits
-    let creditThreshold = 1e5
 
     if (ORDERS == false) {
         return false
@@ -1048,9 +1047,11 @@ Room.prototype.runMarket = function() {
         }
     }
 
+    let myRooms = _.keys(Game.rooms)
+
     if (_.keys(surplus).length > 0) {
         for (let i in surplus) {
-            let targetOrders = _.filter(ORDERS, s => s.type == ORDER_BUY && s.resourceType == i && s.price >= SELL_PRICES[i]*0.75)
+            let targetOrders = _.filter(ORDERS, s => !myRooms.includes(s.roomName) && s.type == ORDER_BUY && s.resourceType == i && s.price >= SELL_PRICES[i]*0.75)
             let targetOrder = _.max(targetOrders, s => s = s.price)
 
             if (_.isUndefined(targetOrder) || _.isNull(targetOrder) || !targetOrder || targetOrder == -Infinity) {
@@ -1080,7 +1081,7 @@ Room.prototype.runMarket = function() {
                 continue
             }
 
-            let targetOrders = _.filter(ORDERS, s => s.type == ORDER_SELL && s.resourceType == i && s.price <= BUY_PRICES[i]*1.25 && Game.market.calcTransactionCost(1e5, this.name, s.roomName)/1e5 <= 0.7)
+            let targetOrders = _.filter(ORDERS, s => !myRooms.includes(s.roomName) && s.type == ORDER_SELL && s.resourceType == i && s.price <= BUY_PRICES[i]*1.25 && Game.market.calcTransactionCost(1e5, this.name, s.roomName)/1e5 <= 0.7)
             let targetOrder = _.min(targetOrders, s => s = s.price)
 
             if (_.isUndefined(targetOrder) || _.isNull(targetOrder) || !targetOrder || targetOrder == -Infinity || _.isUndefined(targetOrder.roomName)) {
