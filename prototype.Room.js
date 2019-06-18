@@ -1047,7 +1047,7 @@ Room.prototype.runMarket = function() {
         }
     }
 
-    let myRooms = _.keys(Game.rooms)
+    let myRooms = _.keys(Memory.rooms)
 
     if (_.keys(surplus).length > 0) {
         for (let i in surplus) {
