@@ -787,7 +787,15 @@ Room.prototype.sendBiters = function(roomName, amnt=2) {
         this.addCreep('ANKLE_BITER', [['CleanupRoom', {roomName: roomName}]])
     }
 }
-
+Room.prototype.sendDismantlers = function(roomName, amount = 2) {
+    if (_.isUndefined(roomName)) {
+        return false
+    }
+    
+    for (let i = 0; i < amount; i++) {
+        this.addCreep('DISMANTLER', [['DismantleRoom', {roomName: roomName}]])
+    }
+}
 Room.prototype.defend = function() {
     let hostileCreeps = [...this.find(FIND_HOSTILE_POWER_CREEPS), ...this.find(FIND_HOSTILE_CREEPS)]
     if (hostileCreeps.length > 0 && !_.any(this.memory.Creeps, s => s.role == 'DEFENSE_MELEE') && _.any(hostileCreeps, s => s.owner.username != 'Invader')) {
@@ -819,7 +827,7 @@ Room.prototype.fireTowers = function() {
     if (hostileCreeps.length == 0) {
         let alliedCreeps = this.find(FIND_MY_CREEPS, {filter: s => s.hits < s.hitsMax})
         if (alliedCreeps.length == 0) {
-            let ramparts = this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART && s.hits < 300})
+            let ramparts = this.find(FIND_STRUCTURES, {filter: s => (s.structureType == STRUCTURE_RAMPART || s.structureType == STRUCTURE_ROAD) && s.hits < 300})
             if (ramparts.length == 0) {
                 return
             }
