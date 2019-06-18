@@ -936,10 +936,10 @@ Room.prototype.updateSourcePathes = function() {
 Room.prototype.getBestBody = function(body, cap = this.energyCapacityAvailable) {
     // be wary of starving room of energy
 
-    let fillers = _.any(this.memory.Creeps, s => s.role == 'EXTENSIONER' && _.isUndefined(Game.creeps[s]))
+    let fillers = _.filter(this.memory.Creeps, s => s.role == 'EXTENSIONER' && Game.creeps[s] != undefined)
 
-    if (fillers == true) {
-        cap = 300
+    if (fillers.length == 0) {
+        cap = Math.max(this.energyAvailable, 200)
     }
 
     let calcCost = 0
