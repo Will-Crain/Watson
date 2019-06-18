@@ -125,6 +125,31 @@ global.FORTIFY_THRESHOLD_BY_RCL = {
 	8:				100e6
 }
 
+global.VASSAL_MEM = {
+    HARVEST_ENERGY: {
+        creeps:     {
+            haulers:    {},
+            miners:     {}
+        },
+        roads:      {},
+    },
+    HARVEST_POWER: {
+        creeps:     {
+            attackers:  {},
+            healers:    {},
+            haulers:    {}
+        }
+    },
+    HARVEST_MINERAL: {
+        creeps:     {
+            haulers:    {},
+            miners:     {}
+        },
+        roads:      {},
+        containers: {}
+    }
+}
+
 global.MAX_STACK_LENGTH = 100
 
 global.BODIES = {
@@ -143,6 +168,9 @@ global.BODIES = {
 	// Small attackers
 	ANKLE_DISMANTLER:	[MOVE, WORK, MOVE, WORK],
 	ANKLE_BITER:		[MOVE, ATTACK, MOVE, ATTACK],
+
+	// Various offensive creeps
+	DISMANTLER:			[MOVE, MOVE, MOVE, MOVE, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK, MOVE, WORK],
 
 	// Defenders
 	DEFENSE_RANGED:		[MOVE, RANGED_ATTACK, MOVE, RANGED_ATTACK, MOVE, RANGED_ATTACK, MOVE, RANGED_ATTACK, MOVE, RANGED_ATTACK],
