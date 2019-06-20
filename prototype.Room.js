@@ -918,8 +918,16 @@ Room.prototype.fireTowers = function() {
 }
 
 
-Room.prototype.updateSourcePathes = function() {
+Room.prototype.updateSourcePathes = function(roomName) {
     for (let i in this.memory.sources) {
+
+        if (!_.isUndefined(roomName)) {
+            let targetPos = RoomPosition.parse(i)
+            if (targetPos.roomName !== roomName) {
+                continue
+            }
+        }
+        
         let newPath = PathFinder.search(this.storage.pos, RoomPosition.parse(this.memory.sources[i].container), {ignoreRoads: true, maxRooms: 4, ignoreCreeps: true, range: 0})
 
         let serPath = PathFinder.serialize(newPath.path)
