@@ -376,10 +376,11 @@ Creep.prototype.runFillExtensions = function(scope) {
 					}
 				}
 				else {
-					this.say(this.pushState('PickUp', {posStr: this.room.getTake(), res: RESOURCE_ENERGY}))
+					this.pushState('PickUp', {posStr: takeFrom, res: RESOURCE_ENERGY})
 				}
 			}
 			else {
+
 				let fill = [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER]
 				let toFill = this.room.find(FIND_STRUCTURES, {filter: s => fill.includes(s.structureType) && s.energy < s.energyCapacity})
 				
@@ -395,19 +396,33 @@ Creep.prototype.runFillExtensions = function(scope) {
 		}
 		else {
 			if (exit == false) {
-				let bunkerPos = 	RoomPosition.parse(Game.rooms[this.memory.homeRoom].Bunker)
-				let resources = 	bunkerPos.findInRange(FIND_DROPPED_RESOURCES, 3)
-				let tombstones = 	bunkerPos.findInRange(FIND_TOMBSTONES, 3)
-
-				if (resources.length > 0) {
-					let targetRes = _.max(resources, s => s.amount)
-					this.pushState('PickUp', {posStr: RoomPosition.serialize(targetRes.pos), res: targetRes.resourceType})
+				if (_.sum(this.carry) == 0) {
+					let bunkerPos = 	RoomPosition.parse(Game.rooms[this.memory.homeRoom].memory.Bunker)
+					let resources = 	bunkerPos.findInRange(FIND_DROPPED_RESOURCES, 3)
+					let tombstones = 	bunkerPos.findInRange(FIND_TOMBSTONES, 3)
+	
+					if (resources.length > 0) {
+						let targetRes = _.max(resources, s => s.amount)
+						this.pushState('PickUp', {posStr: RoomPosition.serialize(targetRes.pos), res: targetRes.resourceType})
+					}
+					else if (tombstones.length > 0) {
+						let targetStone = _.max(tombstones, s => _.sum(s.store))
+						this.pushState('PickUp', {posStr: RoomPosition.serialize(targetStone.pos), res: _.max(_.keys(targetStone), s => targetStone.store[s])})
+					}
+					else {
+						this.pushState('Wait', {until: Game.time+3})
+					}
 				}
-				else if (tombstones.length > 0) {
-					let targetStone = _.max(tombstones, s => _.sum(s.store))
-					this.pushState('PickUp', {posStr: RoomPosition.serialize(targetStone.pos), res: _.max(_.keys(targetStone), s => targetStone.store[s])})
+				else {
+					let targetRes = _.max(_.keys(this.carry), s => this.carry[s])
+					let dropOff = this.room.getStore()
+					if (dropOff == false) {
+						// cry?
+					}
+					else {
+						this.pushState('DropOff', {res: targetRes, posStr: dropOff})
+					}
 				}
-				this.pushState('Wait', {until: Game.time+3})
 			}
 			else {
 				this.popState()
@@ -906,18 +921,17 @@ Creep.prototype.runPickUp = function(scope) {
 				}
 
 				let [type, obj] = _.values(targetLook)
-
 				if (obj instanceof Creep) {
 					obj.transfer(this, res, Math.min(amt, resAmt))
 				}
 				else if (obj instanceof Structure) {
-					obj.withdraw(res, Math.min(amt, resAmt))
+					this.withdraw(obj, res, Math.min(amt, resAmt))
 				}
 				else if (obj instanceof Tombstone) {
-					obj.withdraw(res, Math.min(amt, resAmt))
+					this.withdraw(obj, res, Math.min(amt, resAmt))
 				}
 				else if (obj instanceof Resource) {
-					obj.pickup(res, Math.min(amt, resAmt))
+					this.pickup(obj, res, Math.min(amt, resAmt))
 				}
 				else {
 					console.log(`${this.name} cant find withdraw at ${posStr}`)
