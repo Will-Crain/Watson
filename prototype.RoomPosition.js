@@ -21,6 +21,24 @@ RoomPosition.prototype.getAdjacent = function(checkStructures = false) {
     return outStrArr
 }
 
+RoomPosition.prototype.getInRange = function(range) {
+    let targetRoom = Game.rooms[this.roomName]
+    
+    let terrain = targetRoom.getTerrain()
+    let outArr = []
+
+    let minX = Math.max(this.x-range, 1)
+    let maxX = Math.min(this.x+range, 48)
+    let minY = Math.max(this.y-range, 1)
+    let maxY = Math.min(this.y+range, 48)
+
+    for (let i in DIRECTIONS) {
+        let [dx, dy] = DIRECTIONS[i]
+
+        let terr = terrain.get(this.x+dx, this.y+dy)
+    }
+}
+
 RoomPosition.prototype.fromDirection = function(direction) {
     let [dx, dy] = DIRECTIONS[direction]
     return new RoomPosition(this.x+dx, this.y + dy, this.roomName)
