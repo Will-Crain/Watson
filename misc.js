@@ -56,7 +56,6 @@ global.GET_RES = function(lookObj, res) {
 	}
 
 	let targetProperty = _.has(types, type) ? `${types[type]}.${res}` : (obj['resourceType'] == res ? `amount` : 0)
-	console.log(targetProperty)
 	return _.get(obj, targetProperty) || 0
 }
 
