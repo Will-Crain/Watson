@@ -395,6 +395,18 @@ Creep.prototype.runFillExtensions = function(scope) {
 		}
 		else {
 			if (exit == false) {
+				let bunkerPos = 	RoomPosition.parse(Game.rooms[this.memory.homeRoom].Bunker)
+				let resources = 	bunkerPos.findInRange(FIND_DROPPED_RESOURCES, 3)
+				let tombstones = 	bunkerPos.findInRange(FIND_TOMBSTONES, 3)
+
+				if (resources.length > 0) {
+					let targetRes = _.max(resources, s => s.amount)
+					this.pushState('PickUp', {posStr: RoomPosition.serialize(targetRes.pos), res: targetRes.resourceType})
+				}
+				else if (tombstones.length > 0) {
+					let targetStone = _.max(tombstones, s => _.sum(s.store))
+					this.pushState('PickUp', {posStr: RoomPosition.serialize(targetStone.pos), res: _.max(_.keys(targetStone), s => targetStone.store[s])})
+				}
 				this.pushState('Wait', {until: Game.time+3})
 			}
 			else {
@@ -502,12 +514,15 @@ Creep.prototype.runFindRepair = function(scope) {
 			this.pushState('TravelTo', {roomName: roomName})
 		}
 		else {
-			let noRepair = ['constructedWall', 'rampart', 'controller']
-			let toRepair = this.room.find(FIND_STRUCTURES, {filter: s => !noRepair.includes(s.structureType) && (s.hits/s.hitsMax) <= REPAIR_THRESHOLD_BY_STRUCTURE[s.structureType]})
+			// TODO: MAKE REPAIRER REPAIR PASSED A LARGER THRESHOLD TO ELIMINATE REPEATED SPAWNING
+			let noRepair = 		['constructedWall', 'rampart', 'controller']
+			let toRepair = 		this.room.find(FIND_STRUCTURES, {filter: s => !noRepair.includes(s.structureType) && s.hits < s.hitsMax})
+			let critRepair = 	_.filter(toRepair, s => (s.hits/s.hitsMax) <= REPAIR_THRESHOLD_BY_STRUCTURE[s.structureType])
 
-			if (toRepair.length == 0) {
-				this.pushState('Recycle', {})
+			if (critRepair.length == 0 && !this.memory.marketForDeath) {
+				this.memory.markedForDeath = true
 				this.pushState('NoRespawn', {})
+				return
 			}
 
 			let targetRepair = _.min(toRepair, s => s.hits/s.hitsMax)
@@ -546,7 +561,7 @@ Creep.prototype.runFindBuild = function(scope) {
 
 			let targetBuild
 			if (this.room.name == this.memory.homeRoom) {
-				targetBuild = _.max(toBuild, s => PRIORITY_BY_STRUCTURE[s.structureType] || 10)
+				targetBuild = _.max(toBuild, s => s = PRIORITY_BY_STRUCTURE[s.structureType] || 10)
 			}
 			else {
 				targetBuild = this.pos.findClosestByRange(toBuild)
@@ -881,42 +896,32 @@ Creep.prototype.runPickUp = function(scope) {
 				this.popState()
 			}
 			else {
-				let posStruct = _.first(posObj.lookFor(LOOK_STRUCTURES))
-				if (_.isUndefined(posStruct) || _.isNull(posStruct)) {
-					let resObj = _.find(posObj.lookFor(LOOK_RESOURCES), s => s.resourceType == res)
-					if (_.isUndefined(resObj)) {
-						let creepObj = _.find(posObj.lookFor(LOOK_CREEPS), s => s.my && s.carry.energy > 0)
-						if (_.isUndefined(creepObj)) {
-							this.popState()
-						}
-						else {
-							let state = creepObj.transfer(this, RESOURCE_ENERGY, Math.min(amt, creepObj.carry[res]))
-							if (state == 0 || _.sum(this.carry) == this.carryCapacity) {
-								this.popState()
-							}
-						}
-					}
-					else {
-						let state = this.pickup(resObj)
-						if (state == 0 || _.sum(this.carry) == this.carryCapacity) {
-							this.popState()
-						}
-					}
+				let allowedTypes = ['creep', 'structure', 'resource', 'tombstone']
+				let looks = _.filter(posObj.look(), s => allowedTypes.includes(s.type))
+
+				let targetLook = _.max(looks, s => GET_RES(s, res))
+				let resAmt = GET_RES(targetLook, res)
+				if (Math.abs(targetLook) === Infinity) {
+					return false
+				}
+
+				let [type, obj] = _.values(targetLook)
+
+				if (obj instanceof Creep) {
+					obj.transfer(this, res, Math.min(amt, resAmt))
+				}
+				else if (obj instanceof Structure) {
+					obj.withdraw(res, Math.min(amt, resAmt))
+				}
+				else if (obj instanceof Tombstone) {
+					obj.withdraw(res, Math.min(amt, resAmt))
+				}
+				else if (obj instanceof Resource) {
+					obj.pickup(res, Math.min(amt, resAmt))
 				}
 				else {
-					let st = ['container', 'storage', 'terminal']
-					if (st.includes(posStruct.structureType)) {
-						let state = this.withdraw(posStruct, res, Math.min(amt, posStruct.store[res]))
-						if (state == 0 || _.sum(this.carry) == this.carryCapacity || state == -6) {
-							this.popState()
-						}
-					}
-					else {
-						let state = this.withdraw(posStruct, res, Math.min(amt, posStruct.energy))
-						if (state == 0 || _.sum(this.carry) == this.carryCapacity || state == -6) {
-							this.popState()
-						}
-					}
+					console.log(`${this.name} cant find withdraw at ${posStr}`)
+					this.popState()
 				}
 			}
 		}
@@ -926,18 +931,7 @@ Creep.prototype.runPickUp = function(scope) {
 Creep.prototype.runDefenseMelee = function(scope) {
 	let {roomName = this.memory.homeRoom} = scope
 	if (this.room.name !== roomName) {
-		let route = Game.map.findRoute(this.room, roomName, {routeCallback(rName, frName) {
-			if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'SOURCE_KEEPER') {
-				return 2
-			}
-			else {
-				return 1
-			}
-		}})
-		let nextRoom = _.first(route).room
-		let roomPos = new RoomPosition(24, 24, nextRoom)
-
-		this.pushState('MoveTo', {posStr: RoomPosition.serialize(roomPos), exitOnRoom: true})
+		this.pushState('TravelTo', {roomName: roomName})
 	}
 	else {
 		let hostileCreeps = [...this.room.find(FIND_HOSTILE_POWER_CREEPS), ... this.room.find(FIND_HOSTILE_CREEPS)]
@@ -996,7 +990,7 @@ Creep.prototype.runDismantleRoom = function(scope) {
 		this.pushState('TravelTo', {roomName: roomName})
 	}
 	else {
-		let noKill = ['controller']
+		let noKill = ['controller', 'road', 'container']
 		let structures = this.room.find(FIND_STRUCTURES, {filter: s => !noKill.includes(s.structureType)})
 		if (structures.length > 0) {
 			let targetStructure = _.min(structures, s => s.hits)
