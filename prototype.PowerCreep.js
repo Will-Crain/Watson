@@ -3,42 +3,15 @@ PowerCreep.prototype.runMoveTo = function(scope) {
     let posObj = RoomPosition.parse(posStr)
 
     if (this.room.name !== posObj.roomName) {
-        if (travel == false) {
-            let route = Game.map.findRoute(this.room, posObj.roomName, {routeCallback(rName, frName) {
-                if (Room.describe(rName) == 'SOURCE_KEEPER' || Room.describe(frName) == 'SOURCE_KEEPER') {
-                    return 50
-                }
-                else {
-                    return 1
-                }
-            }})
-            let nextRoom = _.first(route).room
-            let roomPos = new RoomPosition(24, 24, nextRoom)
-            if (this.pos.inRangeTo(posObj, range)) {
-                this.popState()
-            }
-            else {
-                this.pushState('MoveTo', {range: 2, posStr: RoomPosition.serialize(roomPos), travel: true})
-            }
-        }
-        else {
-            this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps, ignoreRoads: true})
-        }
+        this.pushState('TravelTo', {roomName: posObj.roomName})
     }
 
     else {
-        if (this.room.name == posObj.roomName) {
-            if (travel == true && !this.pos.isNearExit()) {
-                this.popState()
-            }
-            else {
-                if (this.pos.inRangeTo(posObj, range)) {
-                    this.popState()
-                }
-                else {
-                    this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps, ignoreRoads: true})
-                }
-            }
+        if (this.pos.inRangeTo(posObj, range)) {
+            this.popState()
+        }
+        else {
+            this.moveTo(posObj, {range: range, ignoreCreeps: ignoreCreeps, ignoreRoads: true})
         }
     }
 }
@@ -121,12 +94,14 @@ PowerCreep.prototype.runOperate = function(scope) {
 
     if (this.powers[PWR_OPERATE_EXTENSION] && this.powers[PWR_OPERATE_EXTENSION].cooldown == 0) {
         if (homeRoom.energyAvailable < homeRoom.energyCapacityAvailable * 0.75) {
-            if (this.pos.inRangeTo(homeRoom.terminal, 3)) {
-                this.usePower(PWR_OPERATE_EXTENSION, homeRoom.terminal)
+            let structs = [homeRoom.storage, homeRoom.terminal]
+            let tStruct = _.find(structs, s => s.store['energy'] > 1000)
+            if (this.pos.inRangeTo(tStruct, 3)) {
+                this.usePower(PWR_OPERATE_EXTENSION, tStruct)
                 this.pushState('AvoidStructures')
             }
             else {
-                this.pushState('MoveTo', {posStr: RoomPosition.serialize(homeRoom.terminal.pos), range: 3})
+                this.pushState('MoveTo', {posStr: RoomPosition.serialize(tStruct.pos), range: 3})
             }
         }
     }
