@@ -24,7 +24,7 @@ global.DESIRED_RESOURCES = {
 	power:				50000
 }
 
-global.CREDIT_THRESHOLD = 700000
+global.CREDIT_THRESHOLD = 500000
 
 global.BODY_ORDER = ['tough', 'move', 'carry', 'work', 'ranged_attack', 'attack', 'claim', 'heal']
 
