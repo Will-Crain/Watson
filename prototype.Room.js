@@ -2,17 +2,20 @@
 
 Room.prototype.standardRuntime = function() {
     this.operate()
+
     this.checkToSpawn()
     this.checkToBuild()
+
     this.spawnQueue()
     this.buildQueue()
+
     this.fireTowers()
     this.defend()
+
     this.runMarket()
 }
 
 Room.prototype.operate = function() {
-
     // Process power, if it can
     let powerSpawn = _.first(this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_POWER_SPAWN}))
     if (!_.isUndefined(powerSpawn) && powerSpawn.power > 0 && powerSpawn.energy > 50) {
@@ -25,10 +28,10 @@ Room.prototype.operate = function() {
         let mineralObj = mineralPos.lookFor(LOOK_MINERALS)[0]
 
         if (_.isUndefined(mineralObj)) {
-            return
+            break
         }
         if (mineralObj.mineralAmount <= 0) {
-            return
+            break
         }
 
         let targetMiner = _.find(this.memory.Creeps, s => s.role == 'MINERAL_MINER' && _.last(s.baseStack)[1].minePosStr == i)
@@ -38,6 +41,57 @@ Room.prototype.operate = function() {
         }
         if (_.isUndefined(targetHauler)) {
             this.addCreep('MINERAL_HAULER', [['Haul', {res: mineralObj.mineralType, pickUp: this.memory.minerals[i].container, dropOff: _.first(this.memory.storeTo), dist: this.memory.minerals[i].pathLength}]])
+        }
+    }
+
+    // Checks for things to build
+    for (let i in this.memory.mineRooms) {
+        let targetRoom = Game.rooms[i]
+        if (_.isUndefined(targetRoom)) {
+            continue
+        }
+
+        let conSites = targetRoom.find(FIND_MY_CONSTRUCTION_SITES)
+        if (conSites.length == 0) {
+            continue
+        }
+
+        if (!_.any(this.memory.Creeps, s => s.role == 'BUILDER' && _.last(s.baseStack)[1].roomName == targetRoom.name)) {
+            this.addCreep('BUILDER', [['FindBuild', {roomName: targetRoom.name}]])
+        }
+    }
+    
+    // Check for things to repair
+    for (let i in this.memory.mineRooms) {
+        let targetRoom = Game.rooms[i]
+        if (_.isUndefined(targetRoom)) {
+            continue
+        }
+        let decayStructures = ['rampart', 'road']
+        let toRepair = targetRoom.find(FIND_STRUCTURES, {filter: s => decayStructures.includes(s.structureType) && (s.hits/s.hitsMax) <= REPAIR_THRESHOLD_BY_STRUCTURE[s.structureType]})
+        if (toRepair.length == 0) {
+            continue
+        }
+
+        if (!_.any(this.memory.Creeps, s => s.role == 'REPAIRER' && _.last(s.baseStack)[1].roomName == targetRoom.name)) {
+            this.addCreep('REPAIRER', [['FindRepair', {roomName: targetRoom.name}]])
+        }
+    }
+
+    if (!_.any(this.memory.Creeps, s => s.role == 'BUILDER')) {
+        this.addCreep('BUILDER', [['FindBuild', {}]])
+    }
+
+    // Check for things to repair by room
+    for (let i in this.memory.mineRooms) {
+        let targetRoom = Game.rooms[i]
+        if (_.isUndefined(targetRoom)) {
+            continue
+        }
+
+        let conSites = targetRoom.find(FIND_MY_CONSTRUCTION_SITES)
+        if (conSites.length == 0) {
+
         }
     }
 }
@@ -342,54 +396,68 @@ Room.prototype.addFromBlueprint = function(posStr, blueprint, level) {
 }
 
 Room.prototype.getTake = function(resourceType = RESOURCE_ENERGY) {
+    let order = ['storage', 'terminal', 'container', 'spawn']
+    let structs = this.find(FIND_STRUCTURES, {filter: s => order.includes(s.structureType)})
 
-    let fromSpawn = true
-
-    if (!_.isUndefined(this.memory.takeFrom) || this.memory.takeFrom.length > 1) {
-        fromSpawn = false
-    }
-    
-    if (resourceType == RESOURCE_ENERGY) {
-        for (let i in this.memory.takeFrom) {
-            let posObj = RoomPosition.parse(this.memory.takeFrom[i])
-            let obj = posObj.lookFor(LOOK_STRUCTURES)[0]
-
-            if (_.isUndefined(obj)) {
-                continue
-            }
-
-            if (obj.structureType == STRUCTURE_SPAWN && fromSpawn == false) {
-                continue
-            }
-            if ( (obj.energy && obj.energy > 0) || (obj.store && obj.store.energy > 0) ) {
-                return this.memory.takeFrom[i]
-            }
-            else {
-                continue
-            }
-            
+    for (let i in order) {
+        let targetStruct = _.find(structs, s => s.structureType == order[i] && (s.store[resourceType] && s.store[resourceType] > 0))
+        if (!_.isUndefined(targetStruct)) {
+            return RoomPosition.serialize(targetStruct.pos)
         }
     }
-    else {
-        for (let i in this.memory.takeFrom) {
-            let posObj = RoomPosition.parse(this.memory.takeFrom[i])
-            let obj = posObj.lookFor(LOOK_STRUCTURES)[0]
-            
-            if (_.isUndefined(obj)) {
-                continue
-            }
-            
-            if (!obj.store) {
-                continue
-            }
-            if (obj.store[resourceType] !== undefined) {
-                return this.memory.takeFrom[i]
-            }
-        }
-    }
-    
+
     return false
 }
+
+// Room.prototype.getTake = function(resourceType = RESOURCE_ENERGY) {
+//     let fromSpawn = true
+
+//     if (!_.isUndefined(this.memory.takeFrom) || this.memory.takeFrom.length > 1) {
+//         fromSpawn = false
+//     }
+    
+//     if (resourceType == RESOURCE_ENERGY) {
+//         for (let i in this.memory.takeFrom) {
+//             let notAllowed = ['rampart', 'road']
+//             let posObj = RoomPosition.parse(this.memory.takeFrom[i])
+//             let obj = _.find(posObj.lookFor(LOOK_STRUCTURES), s => !notAllowed.includes(s.structureType))
+
+//             if (_.isUndefined(obj)) {
+//                 continue
+//             }
+
+//             if (obj.structureType == STRUCTURE_SPAWN && fromSpawn == false) {
+//                 continue
+//             }
+//             if ( (obj.energy && obj.energy > 0) || (obj.store && obj.store.energy > 0) ) {
+//                 return this.memory.takeFrom[i]
+//             }
+//             else {
+//                 continue
+//             }
+            
+//         }
+//     }
+//     else {
+//         for (let i in this.memory.takeFrom) {
+//             let posObj = RoomPosition.parse(this.memory.takeFrom[i])
+//             let obj = posObj.lookFor(LOOK_STRUCTURES)[0]
+            
+//             if (_.isUndefined(obj)) {
+//                 continue
+//             }
+            
+//             if (!obj.store) {
+//                 continue
+//             }
+//             if (obj.store[resourceType] !== undefined) {
+//                 return this.memory.takeFrom[i]
+//             }
+//         }
+//     }
+    
+//     return false
+// }
 
 Room.prototype.getStore = function(resourceType = RESOURCE_ENERGY) {
     if (resourceType == RESOURCE_ENERGY) {
@@ -485,6 +553,7 @@ Room.prototype.spawnQueue = function() {
     }
     let cap = this.energyCapacityAvailable
     
+    // Check for available spawns or empty spawn queue
     if (useableSpawns.length == 0) {
         return
     }
@@ -492,8 +561,9 @@ Room.prototype.spawnQueue = function() {
         return
     }
     
+    // Check for emergency room state
     if (this.memory.queue.length == _.keys(this.memory.Creeps).length) {
-        cap = 300
+        cap = 200
     }
     
     for (let i in this.memory.queue) {
@@ -508,7 +578,11 @@ Room.prototype.spawnQueue = function() {
             return true
         }
 
-        let mem = {homeRoom: this.name, stack: _.cloneDeep(this.memory.Creeps[this.memory.queue[i]].baseStack)}
+        if (_.isUndefined(this.memory.queue[i])) {
+            continue
+        }
+
+        let mem = {homeRoom: this.name, stack: this.memory.Creeps[this.memory.queue[i]].baseStack}
         
         let cName = this.memory.queue[i]
         
@@ -714,7 +788,7 @@ Room.prototype.addSource = function(posStr, saturate = false, path = false) {
     if (path == false) {
         let bunkerPosObj = RoomPosition.parse(this.memory.Bunker)
         let dropOffSpot = bunkerPosObj.add(1, -2)
-        let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 5, plainCost: 2, swampCost: 5, roomCallback: function(roomName) {
+        let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 15, plainCost: 2, swampCost: 5, roomCallback: function(roomName) {
             if (roomName == rName) {
                 return PathFinder.CostMatrix.deserialize(Memory.RoomCache[rName].data)
             }
@@ -787,7 +861,15 @@ Room.prototype.sendBiters = function(roomName, amnt=2) {
         this.addCreep('ANKLE_BITER', [['CleanupRoom', {roomName: roomName}]])
     }
 }
-
+Room.prototype.sendDismantlers = function(roomName, amount = 2) {
+    if (_.isUndefined(roomName)) {
+        return false
+    }
+    
+    for (let i = 0; i < amount; i++) {
+        this.addCreep('DISMANTLER', [['DismantleRoom', {roomName: roomName}]])
+    }
+}
 Room.prototype.defend = function() {
     let hostileCreeps = [...this.find(FIND_HOSTILE_POWER_CREEPS), ...this.find(FIND_HOSTILE_CREEPS)]
     if (hostileCreeps.length > 0 && !_.any(this.memory.Creeps, s => s.role == 'DEFENSE_MELEE') && _.any(hostileCreeps, s => s.owner.username != 'Invader')) {
@@ -819,7 +901,7 @@ Room.prototype.fireTowers = function() {
     if (hostileCreeps.length == 0) {
         let alliedCreeps = this.find(FIND_MY_CREEPS, {filter: s => s.hits < s.hitsMax})
         if (alliedCreeps.length == 0) {
-            let ramparts = this.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART && s.hits < 300})
+            let ramparts = this.find(FIND_STRUCTURES, {filter: s => (s.structureType == STRUCTURE_RAMPART || s.structureType == STRUCTURE_ROAD) && s.hits < 300})
             if (ramparts.length == 0) {
                 return
             }
@@ -850,8 +932,16 @@ Room.prototype.fireTowers = function() {
 }
 
 
-Room.prototype.updateSourcePathes = function() {
+Room.prototype.updateSourcePathes = function(roomName) {
     for (let i in this.memory.sources) {
+
+        if (!_.isUndefined(roomName)) {
+            let targetPos = RoomPosition.parse(i)
+            if (targetPos.roomName !== roomName) {
+                continue
+            }
+        }
+        
         let newPath = PathFinder.search(this.storage.pos, RoomPosition.parse(this.memory.sources[i].container), {ignoreRoads: true, maxRooms: 4, ignoreCreeps: true, range: 0})
 
         let serPath = PathFinder.serialize(newPath.path)
@@ -871,7 +961,7 @@ Room.prototype.getBestBody = function(body, cap = this.energyCapacityAvailable) 
     let fillers = _.filter(this.memory.Creeps, s => s.role == 'EXTENSIONER' && Game.creeps[s] != undefined)
 
     if (fillers.length == 0) {
-        cap = Math.max(this.energyAvailable, 300)
+        cap = Math.max(this.energyAvailable, 200)
     }
 
     let calcCost = 0
@@ -959,7 +1049,6 @@ Room.prototype.updateHaulers = function(roads = false) {
 
 Room.prototype.runMarket = function() {
     let credits = Game.market.credits
-    let creditThreshold = 1e5
 
     if (ORDERS == false) {
         return false
@@ -988,9 +1077,11 @@ Room.prototype.runMarket = function() {
         }
     }
 
+    let myRooms = _.keys(Memory.rooms)
+
     if (_.keys(surplus).length > 0) {
         for (let i in surplus) {
-            let targetOrders = _.filter(ORDERS, s => s.type == ORDER_BUY && s.resourceType == i && s.price >= SELL_PRICES[i]*0.75)
+            let targetOrders = _.filter(ORDERS, s => !myRooms.includes(s.roomName) && s.type == ORDER_BUY && s.resourceType == i && s.price >= SELL_PRICES[i]*0.75)
             let targetOrder = _.max(targetOrders, s => s = s.price)
 
             if (_.isUndefined(targetOrder) || _.isNull(targetOrder) || !targetOrder || targetOrder == -Infinity) {
@@ -1020,7 +1111,7 @@ Room.prototype.runMarket = function() {
                 continue
             }
 
-            let targetOrders = _.filter(ORDERS, s => s.type == ORDER_SELL && s.resourceType == i && s.price <= BUY_PRICES[i]*1.25 && Game.market.calcTransactionCost(1e5, this.name, s.roomName)/1e5 <= 0.7)
+            let targetOrders = _.filter(ORDERS, s => !myRooms.includes(s.roomName) && s.type == ORDER_SELL && s.resourceType == i && s.price <= BUY_PRICES[i]*1.25 && Game.market.calcTransactionCost(1e5, this.name, s.roomName)/1e5 <= 0.7)
             let targetOrder = _.min(targetOrders, s => s = s.price)
 
             if (_.isUndefined(targetOrder) || _.isNull(targetOrder) || !targetOrder || targetOrder == -Infinity || _.isUndefined(targetOrder.roomName)) {
@@ -1029,7 +1120,7 @@ Room.prototype.runMarket = function() {
 
             let dp = 1e5
             let energyRatio = Game.market.calcTransactionCost(dp, this.name, targetOrder.roomName)/dp
-            let targetAmount = Math.min(deficit[i], Math.ceil(this.terminal.store[RESOURCE_ENERGY]/energyRatio), targetOrder.amount)
+            let targetAmount = Math.min(deficit[i], Math.ceil(this.terminal.store[RESOURCE_ENERGY]/energyRatio-1), targetOrder.amount)
 
             if (targetAmount < 100) {
                 continue

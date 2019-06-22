@@ -38,6 +38,27 @@ global.HSL_TO_HEX = function(h, s, l) {
 	return HEX
 }
 
+global.GET_RES = function(lookObj, res) {
+	let [type, obj] = _.values(lookObj)
+	
+	// check if `type` is valid
+	let allowedTypes = ['creep', 'energy', 'resource', 'tombstone', 'powerCreep', 'structure']
+	if (!allowedTypes.includes(type)) {
+		return 0
+	}
+
+	// specific properties
+	let types = {
+		creep:		'carry',
+		structure:	'store',
+		tombstone:	'store',
+		powerCreep:	'carry'
+	}
+
+	let targetProperty = _.has(types, type) ? `${types[type]}.${res}` : (obj['resourceType'] == res ? `amount` : 0)
+	return _.get(obj, targetProperty) || 0
+}
+
 global.PROFILE = function() {
     let avgCPU = _.sum(Memory.cpuUsage)/Memory.cpuUsage.length
     let numCreeps = _.sum(Memory.rooms, s => _.keys(s.Creeps).length)
