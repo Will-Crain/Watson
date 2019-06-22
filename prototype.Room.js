@@ -396,54 +396,68 @@ Room.prototype.addFromBlueprint = function(posStr, blueprint, level) {
 }
 
 Room.prototype.getTake = function(resourceType = RESOURCE_ENERGY) {
+    let order = ['storage', 'terminal', 'container', 'spawn']
+    let structs = this.find(FIND_STRUCTURES, {filter: s => order.includes(s.structureType)})
 
-    let fromSpawn = true
-
-    if (!_.isUndefined(this.memory.takeFrom) || this.memory.takeFrom.length > 1) {
-        fromSpawn = false
-    }
-    
-    if (resourceType == RESOURCE_ENERGY) {
-        for (let i in this.memory.takeFrom) {
-            let posObj = RoomPosition.parse(this.memory.takeFrom[i])
-            let obj = posObj.lookFor(LOOK_STRUCTURES)[0]
-
-            if (_.isUndefined(obj)) {
-                continue
-            }
-
-            if (obj.structureType == STRUCTURE_SPAWN && fromSpawn == false) {
-                continue
-            }
-            if ( (obj.energy && obj.energy > 0) || (obj.store && obj.store.energy > 0) ) {
-                return this.memory.takeFrom[i]
-            }
-            else {
-                continue
-            }
-            
+    for (let i in order) {
+        let targetStruct = _.find(structs, s => s.structureType == order[i] && (s.store[resourceType] && s.store[resourceType] > 0))
+        if (!_.isUndefined(targetStruct)) {
+            return RoomPosition.serialize(targetStruct.pos)
         }
     }
-    else {
-        for (let i in this.memory.takeFrom) {
-            let posObj = RoomPosition.parse(this.memory.takeFrom[i])
-            let obj = posObj.lookFor(LOOK_STRUCTURES)[0]
-            
-            if (_.isUndefined(obj)) {
-                continue
-            }
-            
-            if (!obj.store) {
-                continue
-            }
-            if (obj.store[resourceType] !== undefined) {
-                return this.memory.takeFrom[i]
-            }
-        }
-    }
-    
+
     return false
 }
+
+// Room.prototype.getTake = function(resourceType = RESOURCE_ENERGY) {
+//     let fromSpawn = true
+
+//     if (!_.isUndefined(this.memory.takeFrom) || this.memory.takeFrom.length > 1) {
+//         fromSpawn = false
+//     }
+    
+//     if (resourceType == RESOURCE_ENERGY) {
+//         for (let i in this.memory.takeFrom) {
+//             let notAllowed = ['rampart', 'road']
+//             let posObj = RoomPosition.parse(this.memory.takeFrom[i])
+//             let obj = _.find(posObj.lookFor(LOOK_STRUCTURES), s => !notAllowed.includes(s.structureType))
+
+//             if (_.isUndefined(obj)) {
+//                 continue
+//             }
+
+//             if (obj.structureType == STRUCTURE_SPAWN && fromSpawn == false) {
+//                 continue
+//             }
+//             if ( (obj.energy && obj.energy > 0) || (obj.store && obj.store.energy > 0) ) {
+//                 return this.memory.takeFrom[i]
+//             }
+//             else {
+//                 continue
+//             }
+            
+//         }
+//     }
+//     else {
+//         for (let i in this.memory.takeFrom) {
+//             let posObj = RoomPosition.parse(this.memory.takeFrom[i])
+//             let obj = posObj.lookFor(LOOK_STRUCTURES)[0]
+            
+//             if (_.isUndefined(obj)) {
+//                 continue
+//             }
+            
+//             if (!obj.store) {
+//                 continue
+//             }
+//             if (obj.store[resourceType] !== undefined) {
+//                 return this.memory.takeFrom[i]
+//             }
+//         }
+//     }
+    
+//     return false
+// }
 
 Room.prototype.getStore = function(resourceType = RESOURCE_ENERGY) {
     if (resourceType == RESOURCE_ENERGY) {
@@ -774,7 +788,7 @@ Room.prototype.addSource = function(posStr, saturate = false, path = false) {
     if (path == false) {
         let bunkerPosObj = RoomPosition.parse(this.memory.Bunker)
         let dropOffSpot = bunkerPosObj.add(1, -2)
-        let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 5, plainCost: 2, swampCost: 5, roomCallback: function(roomName) {
+        let objPath = PathFinder.search(dropOffSpot, {pos: posObj, range: 1}, {maxRooms: 15, plainCost: 2, swampCost: 5, roomCallback: function(roomName) {
             if (roomName == rName) {
                 return PathFinder.CostMatrix.deserialize(Memory.RoomCache[rName].data)
             }
