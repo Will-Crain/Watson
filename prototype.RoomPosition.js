@@ -39,6 +39,17 @@ RoomPosition.prototype.getInRange = function(range) {
     }
 }
 
+RoomPosition.prototype.isExit = function() {
+    if (!(this.x == 49 || this.x == 0 || this.y == 49 || this.y == 0)) {
+        return false
+    }
+
+    let terrain = Game.map.getRoomTerrain(this.roomName)
+    if (terrain.get(this.x, this.y) == 1) {
+        return false
+    }
+    return true
+}
 RoomPosition.prototype.fromDirection = function(direction) {
     let [dx, dy] = DIRECTIONS[direction]
     return new RoomPosition(this.x+dx, this.y + dy, this.roomName)
@@ -47,11 +58,16 @@ RoomPosition.prototype.isOnEdge = function() {
     if (this.x == 49 || this.x == 0 || this.y == 49 || this.y == 0) {
         return true
     }
+    
     return false
 }
 RoomPosition.prototype.isNearExit = function() {
     let adjPos = this.getAdjacent()
     let terrain = Game.map.getRoomTerrain(this.roomName)
+    
+    if (adjPos.length == 0) {
+        return false
+    }
 
     for (let i in adjPos) {
         let newPos = RoomPosition.parse(adjPos[i])
