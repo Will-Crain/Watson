@@ -894,7 +894,15 @@ Creep.prototype.runPickUp = function(scope) {
 	}
 	else {
 		let posObj = RoomPosition.parse(posStr)
-		
+		let allowed = ['storage', 'terminal', 'container', 'spawn']
+		let targetStruct = _.find(posObj.lookFor(LOOK_STRUCTURES), s => allowed.includes(s.structureType))
+
+		if (_.isUndefined(targetStruct)) {
+			this.say('Ah nuts!')
+			this.popState()
+			return
+		}
+
 		if (!this.pos.inRangeTo(posObj, 1)) {
 			this.pushState('MoveTo', {posStr: posStr})
 		}
