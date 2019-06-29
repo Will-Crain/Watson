@@ -6,12 +6,17 @@ global.ENERGY_STATES = {
 	0:		0
 }
 
+/* TODO
+ * Make the processes in STATE_PROCESSES
+ * Yikes
+*/
+
 global.STATE_PROCESSES = {
 	4:		['ProcessPower', ''],
 	3:		['Fortify', 'Siege'],
 	2:		['MinePower', 'MineMineral', 'Reactions', 'RemoteMineSK'],
-	1:		['UpgradeController', 'RemoteMine', 'Market'],
-	0:		[]
+	1:		['RemoteMine', 'Market'],
+	0:		['Mine', 'UpgradeController']
 }
 
 Room.prototype.getState = function() {
