@@ -34,7 +34,7 @@ global.CREEP_COUNT = 1e6
 global.ME =                 ['engineeryo']
 global.ALLIANCE_PLAYERS =   []
 global.FRIEND_PLAYERS =     []
-global.HOSTILE_PLAYERS =    ['k-c', 'patrik']
+global.HOSTILE_PLAYERS =    ['k-c', 'patrik', 'kittytack']
 
 global.MAX_RESOURCES = {
 	storage: {
