@@ -15,6 +15,7 @@ PathFinder.serialize = function(path) {
     return outstr
 }
 
+
 PathFinder.parse = function(pathStr) {
 	let path = []
 	let pattern = /\w+/g
